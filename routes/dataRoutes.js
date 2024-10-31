@@ -26,6 +26,12 @@ router.get("/getUserEventsCalendar", dataCtrl.getUserEventsCalendar);
 router.get("/getCoursesData", dataCtrl.getCoursesData);
 router.post("/coursePreSignup", dataCtrl.coursePreSignup);
 router.post("/courseCancelPreSignup", dataCtrl.courseCancelPreSignup);
+//-----------------------------------------------------------------------------------
+router.get("/getAllJcentersData", dataCtrl.getAllJcentersData);
+
+
+
+
 // router.route("/calculateOrder").post(orderCtrl.createContact);
 // router.route("/:id").delete(orderCtrl.deleteContact);
 

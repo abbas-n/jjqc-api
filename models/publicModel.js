@@ -157,7 +157,7 @@ module.exports = {
             let studyContentChart = await module.exports.dbQuery_promise(query);
 
 
-            return { hasResume: hasResume,  studyContentChart: studyContentChart };
+            return { hasResume: hasResume, studyContentChart: studyContentChart };
         } catch (error) {
         }
     },
@@ -228,5 +228,15 @@ module.exports = {
         statement = `DELETE FROM user__courses_preSignup WHERE user_id=? AND course_id=?`;
         query = mysql.format(statement, [userId, courseId]);
         queryRS = await module.exports.dbQuery_promise(query);
+    },
+
+    getAllJcentersData: async () => {
+        let statement, query, queryRS;
+        statement = `SELECT jcenters__info.*, city__ostan.name AS cityName
+        FROM jcenters__info
+        INNER JOIN city__ostan ON city__ostan.ID=jcenters__info.city_id `;
+        query = mysql.format(statement, []);
+        queryRS = await module.exports.dbQuery_promise(query);
+        return queryRS;
     },
 }

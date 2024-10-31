@@ -317,6 +317,20 @@ const courseCancelPreSignup = asyncHandler(async (req, res) => {
   }
 });
 
+
+//@desc courseCancelPreSignup
+//@route POST /api/v1/data/getJcentersData
+//@access private
+const getAllJcentersData = asyncHandler(async (req, res) => {
+  try {
+    let allJcentersData = await PModel.getAllJcentersData();
+    res.status(200).json({ allJcentersData: allJcentersData });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "خطا در دریافت اطلاعات" });
+  }
+});
+
 module.exports = {
   getCities,
   getCountries,
@@ -338,5 +352,6 @@ module.exports = {
   getUserEventsCalendar,
   getCoursesData,
   coursePreSignup,
-  courseCancelPreSignup
+  courseCancelPreSignup,
+  getAllJcentersData
 };
