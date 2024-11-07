@@ -31,6 +31,13 @@ module.exports = {
         return queryRS;
     },
 
+    getCityData: async (cityId) => {
+        const statement = `SELECT * FROM city__ostan WHERE ID=?`;
+        const query = mysql.format(statement, [cityId]);
+        let queryRS = await module.exports.dbQuery_promise(query);
+        return queryRS;
+    },
+
     getCities: async () => {
         const statement = `SELECT ID,name FROM city__ostan WHERE parent!=0 AND site_status='Active'`;
         const query = mysql.format(statement);
@@ -239,4 +246,129 @@ module.exports = {
         queryRS = await module.exports.dbQuery_promise(query);
         return queryRS;
     },
+
+    submitJcenter: async (jcenterData) => {
+        let statement, query, queryRS;
+        let cityData = await module.exports.getCityData(jcenterData.city_id);
+        if (jcenterData.ID) {
+            statement = `UPDATE jcenters__info SET title=?,state_id=?,city_id=?,phone=?,fax=?,email=?,address=?,description=?,status=? WHERE ID=?`;
+            query = mysql.format(statement,
+                [jcenterData.title, cityData[0]['parent'], jcenterData.city_id, jcenterData.phone, jcenterData.fax, jcenterData.email, jcenterData.address, jcenterData.description, jcenterData.status, jcenterData.ID]);
+            queryRS = await module.exports.dbQuery_promise(query);
+            if (queryRS.affectedRows > 0) {
+                return queryRS.affectedRows;
+            } else {
+                return -1;
+            }
+        } else {
+            statement = `INSERT INTO  jcenters__info (title,state_id,city_id,phone,fax,email,address,description) VALUES(?,?,?,?,?,?,?,?)`;
+            query = mysql.format(statement,
+                [jcenterData.title, cityData[0]['parent'], jcenterData.city_id, jcenterData.phone, jcenterData.fax, jcenterData.email, jcenterData.address, jcenterData.description]);
+            queryRS = await module.exports.dbQuery_promise(query);
+            if (queryRS.insertId > 0) {
+                return queryRS.insertId;
+            } else {
+                return -1;
+            }
+        }
+    },
+    deleteJcenter: async (jcenterId) => {
+        let statement, query, queryRS;
+        statement = `DELETE FROM jcenters__info WHERE ID=?`;
+        query = mysql.format(statement, [jcenterId]);
+        queryRS = await module.exports.dbQuery_promise(query);
+        if (queryRS.affectedRows > 0) {
+            return queryRS.affectedRows;
+        } else {
+            return -1;
+        }
+    },
+    getAllExamcentersData: async () => {
+        let statement, query, queryRS;
+        statement = `SELECT jexam__centers.*, city__ostan.name AS cityName
+        FROM jexam__centers
+        INNER JOIN city__ostan ON city__ostan.ID=jexam__centers.city_id `;
+        query = mysql.format(statement, []);
+        queryRS = await module.exports.dbQuery_promise(query);
+        return queryRS;
+    },
+
+    submitExamcenter: async (examcenterData) => {
+        let statement, query, queryRS;
+        let cityData = await module.exports.getCityData(examcenterData.city_id);
+        if (examcenterData.ID) {
+            statement = `UPDATE jexam__centers SET title=?,manager_name=?,state_id=?,city_id=?,phone=?,address=?,capacity=?,description=?,status=? WHERE ID=?`;
+            query = mysql.format(statement,
+                [examcenterData.title, examcenterData.manager_name, cityData[0]['parent'], examcenterData.city_id, examcenterData.phone, examcenterData.address, examcenterData.capacity, examcenterData.description, examcenterData.status, examcenterData.ID]);
+            queryRS = await module.exports.dbQuery_promise(query);
+            if (queryRS.affectedRows > 0) {
+                return queryRS.affectedRows;
+            } else {
+                return -1;
+            }
+        } else {
+            statement = `INSERT INTO  jexam__centers (title,manager_name,state_id,city_id,phone,address,capacity,description) VALUES(?,?,?,?,?,?,?,?)`;
+            query = mysql.format(statement,
+                [examcenterData.title, examcenterData.manager_name, cityData[0]['parent'], examcenterData.city_id, examcenterData.phone, examcenterData.address, examcenterData.capacity, examcenterData.description]);
+            queryRS = await module.exports.dbQuery_promise(query);
+            if (queryRS.insertId > 0) {
+                return queryRS.insertId;
+            } else {
+                return -1;
+            }
+        }
+    },
+    deleteExamcenter: async (examcenterId) => {
+        let statement, query, queryRS;
+        statement = `DELETE FROM jexam__centers WHERE ID=?`;
+        query = mysql.format(statement, [examcenterId]);
+        queryRS = await module.exports.dbQuery_promise(query);
+        if (queryRS.affectedRows > 0) {
+            return queryRS.affectedRows;
+        } else {
+            return -1;
+        }
+    },
+    getAllJdepartmentsData: async () => {
+        let statement, query, queryRS;
+        statement = `SELECT education__department.*
+        FROM education__department`;
+        query = mysql.format(statement, []);
+        queryRS = await module.exports.dbQuery_promise(query);
+        return queryRS;
+    },
+    submitJdepartment: async (jdepartmentData) => {
+        let statement, query, queryRS;
+        if (jdepartmentData.ID) {
+            statement = `UPDATE education__department SET title=?,status=? WHERE ID=?`;
+            query = mysql.format(statement,[jdepartmentData.title, jdepartmentData.status, jdepartmentData.ID]);
+            queryRS = await module.exports.dbQuery_promise(query);
+            if (queryRS.affectedRows > 0) {
+                return queryRS.affectedRows;
+            } else {
+                return -1;
+            }
+        } else {
+            statement = `INSERT INTO  education__department (title) VALUES(?)`;
+            query = mysql.format(statement,[jdepartmentData.title]);
+            queryRS = await module.exports.dbQuery_promise(query);
+            if (queryRS.insertId > 0) {
+                return queryRS.insertId;
+            } else {
+                return -1;
+            }
+        }
+    },
+    deleteJdepartment: async (jdepartmentId) => {
+        let statement, query, queryRS;
+        statement = `DELETE FROM education__department WHERE ID=?`;
+        query = mysql.format(statement, [jdepartmentId]);
+        queryRS = await module.exports.dbQuery_promise(query);
+        if (queryRS.affectedRows > 0) {
+            return queryRS.affectedRows;
+        } else {
+            return -1;
+        }
+    },
+
 }

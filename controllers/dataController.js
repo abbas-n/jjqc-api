@@ -307,7 +307,7 @@ const courseCancelPreSignup = asyncHandler(async (req, res) => {
   try {
     const userID = req.user.ID;
     const { courseId } = req.body;
-
+    
     await PModel.courseCancelPreSignup(userID, courseId);
     let coursesRS = await PModel.getCoursesData();
     let userCoursesPreSignup = await PModel.getUserCoursesSignup(userID);
@@ -317,9 +317,10 @@ const courseCancelPreSignup = asyncHandler(async (req, res) => {
   }
 });
 
+//---------------------------------------------------------------------------
 
 //@desc courseCancelPreSignup
-//@route POST /api/v1/data/getJcentersData
+//@route get /api/v1/data/getJcentersData
 //@access private
 const getAllJcentersData = asyncHandler(async (req, res) => {
   try {
@@ -330,6 +331,158 @@ const getAllJcentersData = asyncHandler(async (req, res) => {
     res.status(500).json({ message: "خطا در دریافت اطلاعات" });
   }
 });
+
+//@desc submit or update jahad center
+//@route POST /api/v1/data/submitJcenter
+//@access private
+const submitJcenter = asyncHandler(async (req, res) => {
+  try {
+    const { jcenterData } = req.body;
+    // console.log(jcenterData);
+    let submitRS = await PModel.submitJcenter(jcenterData);
+    if (submitRS > 0) {
+      res.status(200).json({ message: 'اطلاعات با موفقیت ثبت شد' });
+    } else {
+      res.status(400).json({ message: 'خطا در ثبت اطلاعات' });
+    }
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "خطا در دریافت اطلاعات" });
+  }
+});
+//@desc delete jahad center
+//@route POST /api/v1/data/deleteJcenter
+//@access private
+const deleteJcenter = asyncHandler(async (req, res) => {
+  try {
+    const { jcenterId } = req.body;
+    let deleteRS = await PModel.deleteJcenter(jcenterId);
+    if (deleteRS > 0) {
+      res.status(200).json({ message: 'اطلاعات با موفقیت حذف شد' });
+    } else {
+      res.status(400).json({ message: 'خطا در عملیات' });
+    }
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "خطا در دریافت اطلاعات" });
+  }
+});
+
+//---------------------------------------------------------------------------
+
+//@desc get jahad exam centers Data
+//@route get /api/v1/data/getAllExamcentersData
+//@access private
+const getAllExamcentersData = asyncHandler(async (req, res) => {
+  try {
+    let allExamcentersData = await PModel.getAllExamcentersData();
+    res.status(200).json({ allExamcentersData: allExamcentersData });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "خطا در دریافت اطلاعات" });
+  }
+});
+//@desc submit or update jahad exam centers
+//@route POST /api/v1/data/submitExamcenter
+//@access private
+const submitExamcenter = asyncHandler(async (req, res) => {
+  try {
+    const { examcenterData } = req.body;
+    // console.log(jcenterData);
+    let submitRS = await PModel.submitExamcenter(examcenterData);
+    if (submitRS > 0) {
+      res.status(200).json({ message: 'اطلاعات با موفقیت ثبت شد' });
+    } else {
+      res.status(400).json({ message: 'خطا در ثبت اطلاعات' });
+    }
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "خطا در دریافت اطلاعات" });
+  }
+});
+//@desc delete jahad exam center
+//@route POST /api/v1/data/deleteExamcenter
+//@access private
+const deleteExamcenter = asyncHandler(async (req, res) => {
+  try {
+    const { examcenterId } = req.body;
+    let deleteRS = await PModel.deleteExamcenter(examcenterId);
+    if (deleteRS > 0) {
+      res.status(200).json({ message: 'اطلاعات با موفقیت حذف شد' });
+    } else {
+      res.status(400).json({ message: 'خطا در عملیات' });
+    }
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "خطا در دریافت اطلاعات" });
+  }
+});
+
+//---------------------------------------------------------------------------
+
+//@desc get jahad departments Data
+//@route get /api/v1/data/getAllJdepartmentsData
+//@access private
+const getAllJdepartmentsData = asyncHandler(async (req, res) => {
+  try {
+    let allJdepartmentsData = await PModel.getAllJdepartmentsData();
+    res.status(200).json({ allJdepartmentsData: allJdepartmentsData });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "خطا در دریافت اطلاعات" });
+  }
+});
+//@desc submit or update jahad department
+//@route POST /api/v1/data/submitJdepartment
+//@access private
+const submitJdepartment = asyncHandler(async (req, res) => {
+  try {
+    const { jdepartmentData } = req.body;
+    // console.log(jdepartmentData);
+    let submitRS = await PModel.submitJdepartment(jdepartmentData);
+    if (submitRS > 0) {
+      res.status(200).json({ message: 'اطلاعات با موفقیت ثبت شد' });
+    } else {
+      res.status(400).json({ message: 'خطا در ثبت اطلاعات' });
+    }
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "خطا در دریافت اطلاعات" });
+  }
+});
+//@desc delete jahad department
+//@route POST /api/v1/data/deleteJdepartment
+//@access private
+const deleteJdepartment = asyncHandler(async (req, res) => {
+  try {
+    const { jdepartmentId } = req.body;
+    let deleteRS = await PModel.deleteJdepartment(jdepartmentId);
+    if (deleteRS > 0) {
+      res.status(200).json({ message: 'اطلاعات با موفقیت حذف شد' });
+    } else {
+      res.status(400).json({ message: 'خطا در عملیات' });
+    }
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "خطا در دریافت اطلاعات" });
+  }
+});
+
+//---------------------------------------------------------------------------
+
+//@desc get jahad Requests Data
+//@route get /api/v1/data/getRequestsData
+//@access private
+const getRequestsData = asyncHandler(async (req, res) => {
+  try {
+    let allJdepartmentsData = await PModel.getAllJdepartmentsData();
+    res.status(200).json({ allJdepartmentsData: allJdepartmentsData });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "خطا در دریافت اطلاعات" });
+  }
+});
+
 
 module.exports = {
   getCities,
@@ -353,5 +506,14 @@ module.exports = {
   getCoursesData,
   coursePreSignup,
   courseCancelPreSignup,
-  getAllJcentersData
+  getAllJcentersData,
+  submitJcenter,
+  deleteJcenter,
+  getAllExamcentersData,
+  submitExamcenter,
+  deleteExamcenter,
+  getAllJdepartmentsData,
+  submitJdepartment,
+  deleteJdepartment,
+  getRequestsData
 };
