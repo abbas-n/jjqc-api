@@ -212,6 +212,12 @@ const loginUser = asyncHandler(async (req, res) => {
             dbCon.query(insert_query, (err, result) => { });
             res.cookie('RToken', refreshToken, { httpOnly: true, secure: true, sameSite: "none" });
             const needUserData = userDataForToken.user;
+
+
+            const sqllogInsert = "INSERT INTO `user__last_login`(`user_id`) VALUES (?)";
+            const insertLogQuery = mysql.format(sqllogInsert, [user[0].ID]);
+            dbCon.query(insertLogQuery, (err, result) => { });
+
             res.status(200).json({ accessToken, needUserData });
           });
         } else {

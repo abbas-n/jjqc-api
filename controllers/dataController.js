@@ -307,7 +307,7 @@ const courseCancelPreSignup = asyncHandler(async (req, res) => {
   try {
     const userID = req.user.ID;
     const { courseId } = req.body;
-    
+
     await PModel.courseCancelPreSignup(userID, courseId);
     let coursesRS = await PModel.getCoursesData();
     let userCoursesPreSignup = await PModel.getUserCoursesSignup(userID);
@@ -432,6 +432,19 @@ const getAllJdepartmentsData = asyncHandler(async (req, res) => {
     res.status(500).json({ message: "خطا در دریافت اطلاعات" });
   }
 });
+//@desc get jahad departments Data
+//@route get /api/v1/data/getJCenterDepartment
+//@access private
+const getJCenterDepartment = asyncHandler(async (req, res) => {
+  try {
+    const { userUJCId } = req.body;
+    let JCenterDepartment = await PModel.getJCenterDepartment(userUJCId);
+    res.status(200).json({ JCenterDepartment: JCenterDepartment });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "خطا در دریافت اطلاعات" });
+  }
+});
 //@desc submit or update jahad department
 //@route POST /api/v1/data/submitJdepartment
 //@access private
@@ -473,15 +486,106 @@ const deleteJdepartment = asyncHandler(async (req, res) => {
 //@desc get jahad Requests Data
 //@route get /api/v1/data/getRequestsData
 //@access private
-const getRequestsData = asyncHandler(async (req, res) => {
+const getRequestsFilters = asyncHandler(async (req, res) => {
   try {
-    let allJdepartmentsData = await PModel.getAllJdepartmentsData();
-    res.status(200).json({ allJdepartmentsData: allJdepartmentsData });
+    let requestsFilters = await PModel.getRequestsFilters();
+    res.status(200).json({ requestsFilters: requestsFilters });
   } catch (err) {
     console.log(err);
     res.status(500).json({ message: "خطا در دریافت اطلاعات" });
   }
 });
+
+//@desc get jahad Requests Data
+//@route get /api/v1/data/getRequestsData
+//@access private
+const getRequestsData = asyncHandler(async (req, res) => {
+  try {
+    const userID = req.user.ID;
+    const { requestType } = req.body;
+    let userDataRS = await PModel.getUserProfileData(userID);
+    let requestsData = await PModel.getRequestsData(requestType, userDataRS);
+    res.status(200).json({ requestsData: requestsData, UJCId: userDataRS[0]['jcenter_id'] });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "خطا در دریافت اطلاعات" });
+  }
+});
+
+//@desc submit or update jahad department
+//@route POST /api/v1/data/submitJdepartment
+//@access private
+const submitJRequestForm = asyncHandler(async (req, res) => {
+  try {
+    const userID = req.user.ID;
+    const { jRequestData, jRequestType } = req.body;
+    // console.log(jdepartmentData);
+    let userDataRS = await PModel.getUserProfileData(userID);
+    let submitRS = 0;
+    if (jRequestType === 1) {//department request
+      submitRS = await PModel.manageJAddDepartmentRequest(jRequestData, jRequestType, userDataRS);
+    } else if (jRequestType === 2) {//education group request
+      submitRS = await PModel.manageJEduGroupRequest(jRequestData, jRequestType, userDataRS);
+    }
+    if (submitRS > 0) {
+      res.status(200).json({ message: 'اطلاعات با موفقیت ثبت شد' });
+    } else {
+      res.status(400).json({ message: 'خطا در ثبت اطلاعات' });
+    }
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "خطا در دریافت اطلاعات" });
+  }
+});
+//@desc delete jahad requests
+//@route POST /api/v1/data/deleteJrequest
+//@access private
+const deleteJrequest = asyncHandler(async (req, res) => {
+  try {
+    const { jrequestId } = req.body;
+    let deleteRS = await PModel.deleteJrequest(jrequestId);
+    if (deleteRS > 0) {
+      res.status(200).json({ message: 'اطلاعات با موفقیت حذف شد' });
+    } else {
+      res.status(400).json({ message: 'خطا در عملیات' });
+    }
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "خطا در دریافت اطلاعات" });
+  }
+});
+
+
+
+//@desc get jahad Requests Data
+//@route get /api/v1/data/loadLastLogin
+//@access private
+const loadLastLogin = asyncHandler(async (req, res) => {
+  try {
+    const userID = req.user.ID;
+    let lastLogin = await PModel.loadLastLogin(userID);
+    res.status(200).json({ lastLogin });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "خطا در دریافت اطلاعات" });
+  }
+});
+
+
+//@desc get jahad Requests Data
+//@route get /api/v1/data/loadDashboardData
+//@access private
+const loadDashboardData = asyncHandler(async (req, res) => {
+  try {
+    const userID = req.user.ID;
+    let dashboardData = await PModel.loadDashboardData(userID);
+    res.status(200).json({ dashboardData });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "خطا در دریافت اطلاعات" });
+  }
+});
+
 
 
 module.exports = {
@@ -513,7 +617,13 @@ module.exports = {
   submitExamcenter,
   deleteExamcenter,
   getAllJdepartmentsData,
+  getJCenterDepartment,
   submitJdepartment,
   deleteJdepartment,
-  getRequestsData
+  getRequestsFilters,
+  getRequestsData,
+  submitJRequestForm,
+  deleteJrequest,
+  loadLastLogin,
+  loadDashboardData
 };

@@ -29,14 +29,26 @@ router.post("/courseCancelPreSignup", dataCtrl.courseCancelPreSignup);
 //-----------------------------------------------------------------------------------
 router.get("/getAllJcentersData", dataCtrl.getAllJcentersData);
 router.post("/submitJcenter", dataCtrl.submitJcenter);
-router.post("/deleteJcenter", dataCtrl.deleteJcenter);
+router.post("/deleteJcenter", dataCtrl.deleteJcenter); 
+//-----------------------------------------------------------------------------------
 router.get("/getAllExamcentersData", dataCtrl.getAllExamcentersData);
 router.post("/submitExamcenter", dataCtrl.submitExamcenter);
 router.post("/deleteExamcenter", dataCtrl.deleteExamcenter);
-router.get("/getAllJdepartmentsData", dataCtrl.getAllJdepartmentsData);
+//-----------------------------------------------------------------------------------
 router.post("/submitJdepartment", dataCtrl.submitJdepartment);
 router.post("/deleteJdepartment", dataCtrl.deleteJdepartment);
-router.get("/getRequestsData", dataCtrl.getRequestsData);
+router.post("/getJCenterDepartment", dataCtrl.getJCenterDepartment);
+router.get("/getAllJdepartmentsData", dataCtrl.getAllJdepartmentsData);
+//-----------------------------------------------------------------------------------
+router.get("/getRequestsFilters", dataCtrl.getRequestsFilters);
+router.post("/getRequestsData", dataCtrl.getRequestsData); 
+router.post("/submitJRequestForm", dataCtrl.submitJRequestForm);
+router.post("/deleteJrequest", dataCtrl.deleteJrequest); 
+
+
+//------------------------Dashboard---------------------------------------------
+router.get("/loadLastLogin", dataCtrl.loadLastLogin);
+router.get("/loadDashboardData", dataCtrl.loadDashboardData);
 
 
 

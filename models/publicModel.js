@@ -124,12 +124,7 @@ module.exports = {
     getUserProfileData: async (userID) => {
         const statement = `SELECT * FROM user__info WHERE status='Active' AND ID=?`;
         const query = mysql.format(statement, [userID]);
-        const result = await new Promise((resolve, reject) => {
-            dbCon.query(query, (err, result) => {
-                if (err) reject(err);
-                else resolve(result);
-            });
-        });
+        const result = await module.exports.dbQuery_promise(query);
         return result;
     },
     getUserResumeData: async (userID) => {
@@ -274,7 +269,7 @@ module.exports = {
     },
     deleteJcenter: async (jcenterId) => {
         let statement, query, queryRS;
-        statement = `DELETE FROM jcenters__info WHERE ID=?`;
+        statement = `UPDATE jcenters__info SET status='Inactive' WHERE ID=?`;
         query = mysql.format(statement, [jcenterId]);
         queryRS = await module.exports.dbQuery_promise(query);
         if (queryRS.affectedRows > 0) {
@@ -330,10 +325,23 @@ module.exports = {
         }
     },
     getAllJdepartmentsData: async () => {
+        console.time("getAllJdepartmentsData");
         let statement, query, queryRS;
-        statement = `SELECT education__department.*
-        FROM education__department`;
-        query = mysql.format(statement, []);
+        statement = `SELECT education__department.ID,education__department.title FROM education__department WHERE status=?`;
+        query = mysql.format(statement,['Active']);
+        queryRS = await module.exports.dbQuery_promise(query);
+        console.timeEnd("getAllJdepartmentsData");
+        return queryRS;
+    },
+    getJCenterDepartment: async (userUJCId) => {
+        let statement, query, queryRS;
+        statement = `SELECT
+        education__department.ID,
+        education__department.title
+        FROM jcenters__department_relation
+        INNER JOIN education__department ON education__department.ID = jcenters__department_relation.department_id
+        WHERE jcenters__department_relation.jcenter_id=?`;
+        query = mysql.format(statement, [userUJCId]);
         queryRS = await module.exports.dbQuery_promise(query);
         return queryRS;
     },
@@ -341,7 +349,7 @@ module.exports = {
         let statement, query, queryRS;
         if (jdepartmentData.ID) {
             statement = `UPDATE education__department SET title=?,status=? WHERE ID=?`;
-            query = mysql.format(statement,[jdepartmentData.title, jdepartmentData.status, jdepartmentData.ID]);
+            query = mysql.format(statement, [jdepartmentData.title, jdepartmentData.status, jdepartmentData.ID]);
             queryRS = await module.exports.dbQuery_promise(query);
             if (queryRS.affectedRows > 0) {
                 return queryRS.affectedRows;
@@ -350,7 +358,7 @@ module.exports = {
             }
         } else {
             statement = `INSERT INTO  education__department (title) VALUES(?)`;
-            query = mysql.format(statement,[jdepartmentData.title]);
+            query = mysql.format(statement, [jdepartmentData.title]);
             queryRS = await module.exports.dbQuery_promise(query);
             if (queryRS.insertId > 0) {
                 return queryRS.insertId;
@@ -369,6 +377,220 @@ module.exports = {
         } else {
             return -1;
         }
+    },
+    getRequestsFilters: async () => {
+        let statement, query, queryRS;
+        statement = `SELECT jcenters__request_type.ID,jcenters__request_type.title
+        FROM jcenters__request_type 
+        WHERE jcenters__request_type.status='Active'`;
+        query = mysql.format(statement);
+        queryRS = await module.exports.dbQuery_promise(query);
+        return queryRS;
+    },
+    getRequestsData: async (requestType, userDataRS) => {
+        let statement, query, queryRS;
+        let needJCenterFilter = (parseInt(userDataRS[0]['jcenter_id']) > 0 ? ' AND jcenters__request.jcenter_id=' + userDataRS[0]['jcenter_id'] : '');
+        if (requestType === 1) {
+            statement = `SELECT
+            jcenters__request.ID,
+            jcenters__request.type,
+            jcenters__request.jcenter_id,
+            jcenters__request.jcenter_status,
+            jcenters__request.req_department_id,
+            jcenters__request.status,
+            jcenters__info.title AS jcenter_title,
+            education__department.title AS reqjdep_title,
+            CONCAT (jcenterUser.fname,' ',jcenterUser.lname) AS jcenterUser_name,
+            CONCAT (jUser.fname,' ',jUser.lname) AS jUser_name,
+            jcenters__request.jcenter_update_time,
+            jcenters__request.update_time,
+            jcenters__request.insert_time
+            FROM jcenters__request
+            INNER JOIN jcenters__info ON jcenters__info.ID = jcenters__request.jcenter_id
+            INNER JOIN education__department ON education__department.ID = jcenters__request.req_department_id
+            LEFT JOIN user__info AS jcenterUser ON jcenterUser.ID = jcenters__request.jcenter_user_id
+            LEFT JOIN user__info AS jUser ON jUser.ID = jcenters__request.user_id
+            WHERE jcenters__request.status!='Deleted' AND type =? `+ needJCenterFilter;
+        }
+        if (requestType === 2) {
+            statement = `SELECT
+            jcenters__request.ID,
+            jcenters__request.type,
+            jcenters__request.department_id,
+            jcenters__request.educationGroup_id,
+            jcenters__request.jcenter_id,
+            jcenters__request.jcenter_status,
+            jcenters__request.status,
+            jcenters__info.title AS jcenter_title,
+            education__department.title AS jdep_title,
+            education__group.title AS eduGroup_title,
+            CONCAT (jcenterUser.fname,' ',jcenterUser.lname) AS jcenterUser_name,
+            CONCAT (jUser.fname,' ',jUser.lname) AS jUser_name,
+            jcenters__request.jcenter_update_time,
+            jcenters__request.update_time,
+            jcenters__request.insert_time
+            FROM jcenters__request
+            INNER JOIN jcenters__info ON jcenters__info.ID = jcenters__request.jcenter_id
+            INNER JOIN education__department ON education__department.ID = jcenters__request.department_id
+            INNER JOIN education__group ON education__group.ID = jcenters__request.educationGroup_id
+            LEFT JOIN user__info AS jcenterUser ON jcenterUser.ID = jcenters__request.jcenter_user_id
+            LEFT JOIN user__info AS jUser ON jUser.ID = jcenters__request.user_id
+            WHERE jcenters__request.status!='Deleted' AND type =? `+ needJCenterFilter;
+        }
+        if (requestType === 3) {
+            statement = `SELECT
+            jcenters__request.ID,
+            jcenters__request.type,
+            jcenters__request.jcenter_id,
+            jcenters__request.jcenter_status,
+            jcenters__request.status,
+            jcenters__info.title AS jcenter_title,
+            education__department.title AS jdep_title,
+            lesson__info.title AS lesson_title,
+            CONCAT (jcenterUser.fname,' ',jcenterUser.lname) AS jcenterUser_name,
+            CONCAT (jUser.fname,' ',jUser.lname) AS jUser_name,
+            jcenters__request.jcenter_update_time,
+            jcenters__request.update_time,
+            jcenters__request.insert_time
+            FROM jcenters__request
+            INNER JOIN jcenters__info ON jcenters__info.ID = jcenters__request.jcenter_id
+            INNER JOIN education__department ON education__department.ID = jcenters__request.department_id
+            INNER JOIN lesson__info ON lesson__info.ID = jcenters__request.lesson_id
+            LEFT JOIN user__info AS jcenterUser ON jcenterUser.ID = jcenters__request.jcenter_user_id
+            LEFT JOIN user__info AS jUser ON jUser.ID = jcenters__request.user_id
+            WHERE jcenters__request.status!='Deleted' AND type = ? `+ needJCenterFilter;
+        }
+        query = mysql.format(statement, [requestType]);
+        queryRS = await module.exports.dbQuery_promise(query);
+        if (queryRS.length > 0) {
+            return queryRS;
+        } else {
+            return -1;
+        }
+    },
+    manageJAddDepartmentRequest: async (jRequestData, jRequestType, userDataRS) => {
+        let statement, query, queryRS;
+        const currentTime = new Date();
+        if (jRequestData.ID) {
+            statement = `UPDATE jcenters__request SET req_department_id=?,jcenter_status=?,status=?,` + (parseInt(userDataRS[0]['jcenter_id']) > 0 ? 'jcenter_user_id=?,jcenter_update_time=?' : 'user_id=?,update_time=?') + ` WHERE ID=?`;
+            query = mysql.format(statement, [jRequestData.req_department_id, jRequestData.jcenter_status, jRequestData.status, userDataRS[0]['ID'], currentTime, jRequestData.ID]);
+            queryRS = await module.exports.dbQuery_promise(query);
+            if (queryRS.affectedRows > 0) {
+                if (jRequestData.status === 'Confirmed') {
+                    statement = `INSERT INTO  jcenters__department_relation (jcenter_id,department_id) VALUES(?,?)`;
+                    query = mysql.format(statement, [jRequestData.jcenter_id, jRequestData.req_department_id]);
+                    queryRS = await module.exports.dbQuery_promise(query);
+                }
+                return queryRS.affectedRows;
+            } else {
+                return -1;
+            }
+        } else {
+            statement = `INSERT INTO  jcenters__request (type,jcenter_id,req_department_id,jcenter_status) VALUES(?,?,?,?)`;
+            query = mysql.format(statement, [jRequestType, userDataRS[0]['jcenter_id'], jRequestData.req_department_id, jRequestData.jcenter_status]);
+            queryRS = await module.exports.dbQuery_promise(query);
+            if (queryRS.insertId > 0) {
+                return queryRS.insertId;
+            } else {
+                return -1;
+            }
+        }
+
+    },
+    manageJEduGroupRequest: async (jRequestData, jRequestType, userDataRS) => {
+        let statement, query, queryRS;
+        const currentTime = new Date();
+        if (jRequestData.ID) {
+            statement = `UPDATE jcenters__request SET jcenter_status=?,status=?,` + (parseInt(userDataRS[0]['jcenter_id']) > 0 ? 'jcenter_user_id=?,jcenter_update_time=?' : 'user_id=?,update_time=?') + ` WHERE ID=?`;
+            query = mysql.format(statement, [jRequestData.jcenter_status, jRequestData.status, userDataRS[0]['ID'], currentTime, jRequestData.ID]);
+            queryRS = await module.exports.dbQuery_promise(query);
+            if (queryRS.affectedRows > 0) {
+                if (jRequestData.status === 'Confirmed') {
+                    statement = `INSERT INTO  jcenters__eduGroup_relation (jcenter_id,department_id,education_group_id) VALUES(?,?,?)`;
+                    query = mysql.format(statement, [jRequestData.jcenter_id, jRequestData.department_id, jRequestData.educationGroup_id]);
+                    queryRS = await module.exports.dbQuery_promise(query);
+                }
+                return queryRS.affectedRows;
+            } else {
+                return -1;
+            }
+        } else {
+            statement = `INSERT INTO  jcenters__request (type,jcenter_id,department_id,educationGroup_id,jcenter_status) VALUES(?,?,?,?,?)`;
+            query = mysql.format(statement, [jRequestType, userDataRS[0]['jcenter_id'], jRequestData.department_id, jRequestData.educationGroup_id, jRequestData.jcenter_status]);
+            queryRS = await module.exports.dbQuery_promise(query);
+            if (queryRS.insertId > 0) {
+                return queryRS.insertId;
+            } else {
+                return -1;
+            }
+        }
+    },
+    deleteJrequest: async (jrequestId) => {
+        let statement, query, queryRS;
+        statement = `UPDATE jcenters__request SET jcenter_status='Deleted',status='Deleted' WHERE ID=?`;
+        query = mysql.format(statement, [jrequestId]);
+        queryRS = await module.exports.dbQuery_promise(query);
+        if (queryRS.affectedRows > 0) {
+            return queryRS.affectedRows;
+        } else {
+            return -1;
+        }
+    },
+
+    loadLastLogin: async (userID) => {
+        let statement, query, queryRS;
+        statement = `SELECT * FROM user__last_login WHERE user_id=? ORDER BY ID DESC`;
+        query = mysql.format(statement, [userID]);
+        queryRS = await module.exports.dbQuery_promise(query);
+        return queryRS;
+    },
+
+    loadDashboardData: async (userID) => {
+        userID = 1;
+        let statement, query, queryRS;
+        let rerunRS = [];
+        //----------------------------------------------------------------------
+        statement = `SELECT FLOOR(RAND() * (35000000000 - 34000000000 + 1)) + 34000000000 AS income , FLOOR(RAND() * (9 - (-4) + 1)) + (-4) AS change_percent FROM user__last_login WHERE user_id=? ORDER BY ID DESC LIMIT 1`;
+        query = mysql.format(statement, [userID]);
+        queryRS = await module.exports.dbQuery_promise(query);
+        rerunRS.push(queryRS);
+        //----------------------------------------------------------------------
+        statement = `SELECT FLOOR(RAND() * (500 - 70 + 1)) + 70 AS register_num FROM user__last_login WHERE user_id=? ORDER BY ID DESC LIMIT 8`;
+        query = mysql.format(statement, [userID]);
+        queryRS = await module.exports.dbQuery_promise(query);
+        rerunRS.push(queryRS);
+        //----------------------------------------------------------------------
+        statement = `SELECT FLOOR(RAND() * (10000000 - 1000000 + 1)) + 1000000 AS register_num FROM user__last_login WHERE user_id=? ORDER BY ID DESC LIMIT 8`;
+        query = mysql.format(statement, [userID]);
+        queryRS = await module.exports.dbQuery_promise(query);
+        rerunRS.push(queryRS);
+        //----------------------------------------------------------------------
+        statement = `SELECT FLOOR(RAND() * (500 - 70 + 1)) + 70 AS register_num FROM user__last_login WHERE user_id=? ORDER BY ID DESC LIMIT 8`;
+        query = mysql.format(statement, [userID]);
+        queryRS = await module.exports.dbQuery_promise(query);
+        rerunRS.push(queryRS);
+        //----------------------------------------------------------------------
+        statement = `SELECT FLOOR(RAND() * (300 - 50 + 1)) + 50 AS register_num FROM user__last_login WHERE user_id=? ORDER BY ID DESC LIMIT 8`;
+        query = mysql.format(statement, [userID]);
+        queryRS = await module.exports.dbQuery_promise(query);
+        rerunRS.push(queryRS);
+        //----------------------------------------------------------------------
+        statement = `SELECT FLOOR(RAND() * (100 - 10 + 1)) + 10 AS register_num FROM user__last_login WHERE user_id=? ORDER BY ID DESC LIMIT 8`;
+        query = mysql.format(statement, [userID]);
+        queryRS = await module.exports.dbQuery_promise(query);
+        rerunRS.push(queryRS);
+        //----------------------------------------------------------------------
+        statement = `SELECT FLOOR(RAND() * (100 - 10 + 1)) + 10 AS register_num FROM user__last_login WHERE user_id=? ORDER BY ID DESC LIMIT 8`;
+        query = mysql.format(statement, [userID]);
+        queryRS = await module.exports.dbQuery_promise(query);
+        rerunRS.push(queryRS);
+        //----------------------------------------------------------------------
+        statement = `SELECT FLOOR(RAND() * (200 - 5 + 1)) + 5 AS register_num FROM user__last_login WHERE user_id=? ORDER BY ID DESC LIMIT 8`;
+        query = mysql.format(statement, [userID]);
+        queryRS = await module.exports.dbQuery_promise(query);
+        rerunRS.push(queryRS);
+        //----------------------------------------------------------------------
+        return rerunRS;
     },
 
 }
