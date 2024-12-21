@@ -52,7 +52,7 @@ router.post("/addClassToCart", educationCtrl.addClassToUserCart);
 router.get("/loadUserCart", educationCtrl.loadUserCart);
 router.post("/removeFromCart", educationCtrl.removeFromCart);
 router.post("/applyDiscountCode", educationCtrl.applyDiscountCode);
-router.post("/successPayment", educationCtrl.successPayment);
+router.get("/goForCartPayment", educationCtrl.goForCartPayment);
 
 
 //-------------------------Classes------------------------------------

@@ -420,7 +420,7 @@ WHERE lesson__eduGroup_relation.education_group_id = ?`;
     submitClassTeacherRel: async (teacherId, classId) => {
         let statement, query, queryRS;
         statement = `INSERT INTO classes__teacher_relation(classe_id,teacher_id) VALUES (?,?)`;
-        query = mysql.format(statement, [classId , teacherId]);
+        query = mysql.format(statement, [classId, teacherId]);
         console.log(query);
         queryRS = await module.exports.dbQuery_promise(query);
         if (queryRS.insertId > 0) {
@@ -657,6 +657,17 @@ WHERE lesson__eduGroup_relation.education_group_id = ?`;
         let statement, query, queryRS;
         statement = `DELETE FROM user__cart WHERE user_id=? AND class_id=?`;
         query = mysql.format(statement, [userId, classId]);
+        queryRS = await module.exports.dbQuery_promise(query);
+        return queryRS;
+    },
+
+    checkCartClassToEnrollForMoodle: async (userId) => {
+        let statement, query, queryRS;
+        statement = `SELECT classes__info.ID,classes__info.moodle_course_id
+                    FROM user__cart
+                    INNER JOIN classes__info ON classes__info.ID = user__cart.class_id
+                    WHERE user__cart.user_id = ?`;
+        query = mysql.format(statement, [userId]);
         queryRS = await module.exports.dbQuery_promise(query);
         return queryRS;
     },

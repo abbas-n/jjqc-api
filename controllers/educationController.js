@@ -484,7 +484,7 @@ const updateClassTeacherRelStatus = asyncHandler(async (req, res) => {
 const getUserClassesToCheckForRegister = asyncHandler(async (req, res) => {
   try {
     const userID = req.user.ID;
-    let userClassesRS=await educationModel.getUserClassesToCheckForRegister(userID);
+    let userClassesRS = await educationModel.getUserClassesToCheckForRegister(userID);
     res.status(200).json({ userClassesRS: userClassesRS });
   } catch (err) {
     res.status(500).json({ message: 'خطا در دریافت اطلاعات' });
@@ -731,13 +731,25 @@ const applyDiscountCode = asyncHandler(async (req, res) => {
     res.status(500).json({ message: "خطا در دریافت اطلاعات" });
   }
 });
-//@route Post /v1/education/successPayment
+
+//@route Post /v1/education/goForCartPayment
 //@access private
-const successPayment = asyncHandler(async (req, res) => {
+const goForCartPayment = asyncHandler(async (req, res) => {
   try {
     const userID = req.user.ID;
-    let removeFromCart = await educationModel.applyDiscountCode(userID, req.body);
-    res.status(200).json({ removeFromCart });
+    let classRS = await educationModel.checkCartClassToEnrollForMoodle(userID);
+    if (classRS.length > 0) {
+      classRS.forEach(async (classItem) => {
+        if (classItem['moodle_course_id'] > 0) {
+          let statement = `SELECT * FROM user__info WHERE ID=6`;
+          let query = mysql.format(statement, []);
+          let userData = await educationModel.dbQuery_promise(query);
+          await moodleOBJ.enrollUserInCourse(userData[0]['moodle_user_id'], classItem['moodle_course_id']);
+        }
+        console.log(classItem['moodle_course_id']);
+      });
+    }
+    res.status(200).json({ classRS });
   } catch (err) {
     console.log(err);
     res.status(500).json({ message: "خطا در ثبت اطلاعات" });
@@ -813,7 +825,7 @@ module.exports = {
   loadUserCart,
   removeFromCart,
   applyDiscountCode,
-  successPayment,
+  goForCartPayment,
   getLessonTeacherData,
   submitClassTeacherRel,
   updateClassTeacherRelStatus
