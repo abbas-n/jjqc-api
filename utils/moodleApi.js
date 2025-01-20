@@ -1,6 +1,7 @@
 const request = require('request');
 const { dbCon, mysql } = require("../config/dbConnection");
 const dotenv = require("dotenv").config();
+const axios = require('axios');
 
 
 module.exports = {
@@ -29,6 +30,36 @@ module.exports = {
         });
         return rs;
     },
+    manageUserLoginRedirect: async (username, password) => {
+        const moodleUrl = process.env.moodleMainUrl; // آدرس مودل شما
+        const service = "moodle_mobile_app"; // نام سرویس مورد استفاده (در مودل باید تنظیم شده باشد)
+        
+        return `${moodleUrl}/login/index.php`;
+        try {
+            // درخواست برای تولید توکن
+            const tokenResponse = await axios.get(`${moodleUrl}/login/token.php`, {
+                params: {
+                    username: username,
+                    password: password,
+                    service: service,
+                },
+            });
+            console.log(tokenResponse.data); 
+            const { token, error } = tokenResponse.data;
+
+            if (error) {
+                throw new Error(`Login failed: ${error}`);
+            }
+
+            // اگر توکن با موفقیت ایجاد شد، کاربر را به لینک هدایت کنید
+            const redirectUrl = `${moodleUrl}/my?token=${token}`;
+            console.log(`Redirecting user to: ${redirectUrl}`);
+        } catch (error) {
+            console.error('Error during login process:', error);
+            throw new Error('Failed to log in user.');
+        }
+    },
+
     manageEduGroup_category: async (moodleCategoryId, title, eduGroupId, description, mood) => {
         const token = process.env.moodelToken;
         const moodleUrl = process.env.moodleUrl;
@@ -57,7 +88,6 @@ module.exports = {
             };
 
         }
-
         try {
             let response = await module.exports.post_request_formData(moodleUrl, { 'Content-Type': 'application/x-www-form-urlencoded' }, formData);
             response = JSON.parse(response);
@@ -65,6 +95,7 @@ module.exports = {
                 let statement, query, queryRS;
                 statement = `UPDATE education__group SET moodle_category_id=? WHERE ID=?`;
                 query = mysql.format(statement, [response[0]['id'], eduGroupId]);
+                console.log(query);
                 queryRS = await module.exports.dbQuery_promise(query);
             }
         } catch (error) {
@@ -150,7 +181,7 @@ module.exports = {
             'courses[0][format]': "weeks",
             'courses[0][visible]': 1,
         };
-        console.log(formData);
+        // console.log(formData);
         try {
             let response = await module.exports.post_request_formData(moodleUrl, { 'Content-Type': 'application/x-www-form-urlencoded' }, formData);
             response = JSON.parse(response);
@@ -181,7 +212,7 @@ module.exports = {
             'courses[0][format]': "weeks",
             'courses[0][visible]': (status === 'Active' ? 1 : 0),
         };
-        console.log(formData); 
+        console.log(formData);
         try {
             let response = await module.exports.post_request_formData(moodleUrl, { 'Content-Type': 'application/x-www-form-urlencoded' }, formData);
             response = JSON.parse(response);
@@ -245,7 +276,7 @@ module.exports = {
         try {
             let response = await module.exports.post_request_formData(moodleUrl, { 'Content-Type': 'application/x-www-form-urlencoded' }, formData);
             response = JSON.parse(response);
-            console.log(response);
+            // console.log(response);
             if (response[0]['id'] > 0) {
                 let statement, query, queryRS;
                 statement = `UPDATE user__info SET moodle_user_id=? WHERE ID=?`;
@@ -271,9 +302,10 @@ module.exports = {
         };
 
         try {
+            // console.log(formData);
             let response = await module.exports.post_request_formData(moodleUrl, { 'Content-Type': 'application/x-www-form-urlencoded' }, formData);
             response = JSON.parse(response);
-            console.log(response);
+            // console.log(response);
             // if (response[0]['id'] > 0) {
             //     let statement, query, queryRS;
             //     statement = `UPDATE user__info SET moodle_user_id=? WHERE ID=?`;

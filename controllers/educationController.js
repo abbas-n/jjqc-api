@@ -2,8 +2,10 @@ const asyncHandler = require("express-async-handler");
 const { dbCon, mysql } = require("../config/dbConnection");
 const tools = require("../utils/tools");
 const moodleOBJ = require("../utils/moodleApi");
+const AdobeConnect = require("../utils/AdobeApi");
 const educationModel = require("../models/educationModel");
 const jdate = require('jdate').JDate();
+const adobeOBJ = new AdobeConnect();
 
 const base64Obj = require("convert-base64-to-image")
 
@@ -51,12 +53,12 @@ const uploadDocument = asyncHandler(async (req, res) => {
 
 //@route POST /v1/education/deleteAlarmItem
 //@access private
-const addEducationInfoToDb = asyncHandler(async (req, res) => {
+const submitEducationGroup = asyncHandler(async (req, res) => {
   try {
     const userID = req.user.ID;
     let eduData = req.body.educationGroupData;
 
-    let eduRS = educationModel.addEducationGroupToDb(req.body.educationGroupData, userID);
+    let eduRS = await educationModel.addEducationGroupToDb(req.body.educationGroupData, userID);
     if (eduData.moodle_category_id != null) {
       let moodleRS = await moodleOBJ.manageEduGroup_category(eduData.moodle_category_id, eduData.title, eduData.ID, eduData.description, 1);
     } else {
@@ -269,7 +271,7 @@ const addJobLessonRelationToDb = asyncHandler(async (req, res) => {
   }
 });
 
-//@route POST /v1/education/deleteJob
+//@route POST /v1/education/deleteJobLessonRelation
 //@access private
 const deleteJobLessonRelation = asyncHandler(async (req, res) => {
   try {
@@ -294,7 +296,7 @@ const getAllTeacher = asyncHandler(async (req, res) => {
   }
 });
 
-//@route Get /v1/education/getAllTeacher
+//@route Get /v1/education/getAllJCenter
 //@access private
 const getAllJCenter = asyncHandler(async (req, res) => {
   try {
@@ -306,7 +308,7 @@ const getAllJCenter = asyncHandler(async (req, res) => {
   }
 });
 
-//@route Get /v1/education/getAllTeacher
+//@route Get /v1/education/getTeacherDegree
 //@access private
 const getTeacherDegree = asyncHandler(async (req, res) => {
   try {
@@ -381,7 +383,114 @@ const getLessonTeacherData = asyncHandler(async (req, res) => {
     res.status(500).json({ message: "خطا در دریافت اطلاعات" });
   }
 });
+//@route post /v1/education/handleEnterMoodle
+//@access private
+const handleEnterMoodle = asyncHandler(async (req, res) => {
+  try {
+    const userID = req.user.ID;
+    const { classId } = req.body; 
+    let userData = await educationModel.getUserDetail(userID);
+    let moodUrl = await moodleOBJ.manageUserLoginRedirect(userData[0]['mobile'],userData[0]['mobile']); 
+    res.status(200).json({ moodUrl: moodUrl });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "خطا در دریافت اطلاعات" });
+  }
+});
 
+//@route Get /v1/education/handleEnterOnlineClass
+//@access private
+const handleEnterOnlineClass = asyncHandler(async (req, res) => {
+  try {
+    const userID = req.user.ID;
+    const { classId, userPermission } = req.body;
+    await adobeOBJ.loginToAdobeAsAdmin();
+    let classData = await educationModel.getClassData(classId);
+    let userData = await educationModel.getUserDetail(userID);
+
+    if (userData[0]['adobe_principle_id'] === 0) {
+      await educationModel.createAdobeUser(userData[0]);
+      userData = await educationModel.getUserDetail(userID);
+    }
+
+    if (userPermission != 5) {
+      if (classData[0]['adobe_dir_sco_id'] === null) {
+        let folderScoId = await adobeOBJ.getScos('content');
+        let adobe_dir_sco_id = await adobeOBJ.createFolder(classData[0]['title'], folderScoId);
+        statement = `UPDATE classes__info SET adobe_dir_sco_id=? WHERE ID=?`;
+        query = mysql.format(statement, [adobe_dir_sco_id, 1]);
+        await educationModel.dbQuery_promise(query);
+        classData[0]['adobe_dir_sco_id'] = adobe_dir_sco_id;
+      }
+      if (classData[0]['adobe_meeting_url'] === null) {
+        let adobeRS = await adobeOBJ.createMeetingInFolder(classData[0]['title'], 'test' + classData[0]['code'], classData[0]['adobe_dir_sco_id']);
+        statement = `UPDATE classes__info SET adobe_meeting_url=? , adobe_meeting_sco=? WHERE ID=?`;
+        query = mysql.format(statement, [adobeRS["url-path"], adobeRS["sco-id"], 1]);
+        await educationModel.dbQuery_promise(query);
+        classData[0]['adobe_meeting_sco'] = adobeRS["sco-id"];
+        classData[0]['adobe_meeting_url'] = adobeRS["url-path"];
+      }
+    }
+    let meetingURL = '';
+    if (userPermission !== 5) {
+      await adobeOBJ.addTeacherToMeeting(userData[0]['adobe_principle_id'], classData[0]['adobe_meeting_sco']);
+      meetingURL = await adobeOBJ.loginToMeetingAsHost(userData[0]['mobile'], userData[0]['mobile'], classData[0]['adobe_meeting_url']);
+    } else {
+      // await adobeOBJ.addParticipantToMeeting(userData[0]['adobe_principle_id'], classData[0]['adobe_meeting_sco']);
+      // meetingURL =await adobeOBJ.loginToMeetingAsParticipant( classData[0]['adobe_meeting_url']);
+      meetingURL = await adobeOBJ.loginToMeetingAsHost(userData[0]['mobile'], userData[0]['mobile'], classData[0]['adobe_meeting_url']);
+    }
+    res.status(200).json({ meetingURL: meetingURL });
+
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "خطا در دریافت اطلاعات" });
+  }
+});
+
+//@desc courseCancelPreSignup
+//@route get /api/v1/education/getMeetingRecordings
+//@access private
+const getMeetingRecordings = asyncHandler(async (req, res) => {
+  try {
+    const userID = req.user.ID;
+    const { classId } = req.body;
+    let userData = await educationModel.getUserDetail(userID);
+    let statement, query, classSessionRS;
+    statement = `SELECT * FROM classes__session WHERE classe_id=? AND adobe_meeting_url IS NULL `;
+    query = mysql.format(statement, [classId]);
+    classSessionRS = await educationModel.dbQuery_promise(query);
+    if (classSessionRS.length > 0) {
+      let classData = await educationModel.getClassData(classId);
+      await adobeOBJ.loginToAdobeAsAdmin();
+      let meetingRecordings = await adobeOBJ.getRecordingFilesِData(classData[0]['adobe_meeting_sco']);
+      await educationModel.updateOnlineClassSessionsRecordings(classId, meetingRecordings);
+      res.status(200).json({ meetingRecordings });
+    } else {
+      res.status(200).json({ 'message': 'اطلاعات جلسات دریافت شده است' });
+    }
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "خطا در دریافت اطلاعات" });
+  }
+});
+//@desc courseCancelPreSignup
+//@route get /api/v1/education/playRecordedSessionVideo
+//@access private
+const playRecordedSessionVideo = asyncHandler(async (req, res) => {
+  try {
+    const userID = req.user.ID;
+    const { sessionId } = req.body;
+    let userData = await educationModel.getUserDetail(userID);
+    let sessionData = await educationModel.getOnlineClassSessionData(sessionId);
+    await adobeOBJ.loginToAdobeOtherUsers(userData[0]['mobile'], userData[0]['mobile']);
+    // await adobeOBJ.loginToAdobeAsAdmin();
+    res.status(200).json({ meetingURL: sessionData[0]['adobe_meeting_url'] });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "خطا در دریافت اطلاعات" });
+  }
+});
 
 //@desc courseCancelPreSignup
 //@route get /api/v1/education/addTeacherToDb
@@ -421,6 +530,19 @@ const getTeacherLessonRelationData = asyncHandler(async (req, res) => {
   }
 });
 
+//@route GET /v1/education/getTeacherLesson
+//@access private
+const getTeacherLesson = asyncHandler(async (req, res) => {
+  try {
+    const userID = req.user.ID;
+    let teacherId = await educationModel.getTeacherIdByUserId(userID);
+    let relRS = await educationModel.getTeacherLessonRelationData(teacherId);
+    res.status(200).json({ relRS });
+  } catch (err) {
+    res.status(500).json({ message: 'Error in fetching data!' });
+  }
+});
+
 //@route POST /v1/education/submitTeacherLessonRel
 //@access private
 const submitTeacherLessonRel = asyncHandler(async (req, res) => {
@@ -443,6 +565,12 @@ const submitTeacherLessonRel = asyncHandler(async (req, res) => {
 const submitClassTeacherRel = asyncHandler(async (req, res) => {
   try {
     const { teacherId, classId } = req.body;
+    let userData = await educationModel.getUserDetailByTeacherId(teacherId);
+    let classData = await educationModel.getClassData(classId);
+    if (userData[0]['adobe_principle_id'] == 0 && (classData[0]['delivery_id'] === 1 || classData[0]['delivery_id'] === 2)) {
+      await educationModel.createAdobeUser(userData[0]);
+    }
+
     let relRS = await educationModel.submitClassTeacherRel(teacherId, classId);
     if (relRS > 0) {
       res.status(200).json({ message: 'اطلاعات با موفقیت ثبت شد' });
@@ -450,6 +578,7 @@ const submitClassTeacherRel = asyncHandler(async (req, res) => {
       res.status(400).json({ message: 'خطا در ثبت اطلاعات' });
     }
   } catch (err) {
+    console.log(err);
     res.status(500).json({ message: 'خطا در ثبت اطلاعات' });
   }
 });
@@ -467,6 +596,19 @@ const updateTeacherLessonRelStatus = asyncHandler(async (req, res) => {
   }
 });
 
+
+//@route POST /v1/education/updateTeacherLessonRelStatus
+//@access private
+const getLessonTeacher = asyncHandler(async (req, res) => {
+  try {
+    const { lessonId } = req.body;
+    let lessonTeacher = await educationModel.loadLessonTeacher(lessonId);
+    res.status(200).json({ lessonTeacher });
+  } catch (err) {
+    res.status(500).json({ message: 'Error in fetching data!' });
+  }
+});
+
 //@route POST /v1/education/updateClassTeacherRelStatus
 //@access private
 const updateClassTeacherRelStatus = asyncHandler(async (req, res) => {
@@ -474,6 +616,30 @@ const updateClassTeacherRelStatus = asyncHandler(async (req, res) => {
     const { classTeacherRelId, classTeacherRelStatus } = req.body;
     await educationModel.updateClassTeacherRelStatus(classTeacherRelId, classTeacherRelStatus);
     res.status(200).json({ message: 'اطلاعات با موفقیت ثبت شد' });
+  } catch (err) {
+    res.status(500).json({ message: 'Error in fetching data!' });
+  }
+});
+
+//@route POST /v1/education/changeClassStatus
+//@access private
+const changeClassStatus = asyncHandler(async (req, res) => {
+  try {
+    const { classesId, targetStatus } = req.body;
+    await educationModel.updateClassStatus(classesId, targetStatus);
+    res.status(200).json({ message: 'اطلاعات با موفقیت ثبت شد' });
+  } catch (err) {
+    res.status(500).json({ message: 'Error in fetching data!' });
+  }
+});
+
+//@route POST /v1/education/getClassDeliveryType
+//@access private
+const getClassDeliveryType = asyncHandler(async (req, res) => {
+  try {
+    const { classId } = req.body;
+    let deliveryResult = await educationModel.loadClassDeliveryType(classId);
+    res.status(200).json({ deliveryResult });
   } catch (err) {
     res.status(500).json({ message: 'Error in fetching data!' });
   }
@@ -496,7 +662,10 @@ const getUserClassesToCheckForRegister = asyncHandler(async (req, res) => {
 //@access private
 const getAllClasses = asyncHandler(async (req, res) => {
   try {
-    const { jcenter_id } = req.body;
+    const { jcenter_id, permission } = req.body;
+    // if(parseInt(permission) === 2){
+    //   jcenter_id = -1;
+    // }
     let allClasses = await educationModel.loadClasses(jcenter_id);
     res.status(200).json({ allClasses });
   } catch (err) {
@@ -535,11 +704,11 @@ const getClassesType = asyncHandler(async (req, res) => {
 const addClassInfoToDb = asyncHandler(async (req, res) => {
   try {
     const userID = req.user.ID;
-    const { ClassesData } = req.body;
-    let classRS = await educationModel.addClassInfoToDb(ClassesData, userID);
+    const { ClassesData, copyMode, deliveryResult } = req.body;
+    let classRS = await educationModel.addClassInfoToDb(ClassesData, userID, deliveryResult);
     let lessonHasRelData = await educationModel.getLessonEduGroupRelShortData(ClassesData.lesson_id, ClassesData.group_id);
     if (lessonHasRelData.length > 0 && ClassesData.delivery_id == 3) {
-      if (ClassesData.ID) {
+      if (ClassesData.ID && copyMode !== true) {
         await moodleOBJ.updateCourse(ClassesData.ID, ClassesData.title, ClassesData.description, ClassesData.status, lessonHasRelData[0]['moodle_subcategory_id'], ClassesData.moodle_course_id);
         // await moodleOBJ.duplicateCourse(relRS, lessonHasRelData[0]['moodle_course_id'], lessonData[0]['title'], eduGroupData[0]['title'], eduGroupData[0]['moodle_category_id']);
       } else {
@@ -549,7 +718,7 @@ const addClassInfoToDb = asyncHandler(async (req, res) => {
     }
     res.status(200).json({ classRS });
   } catch (err) {
-    console.error('Error details:', error);
+    console.error(err);
     res.status(500).json({ message: "خطا در دریافت اطلاعات" });
   }
 });
@@ -570,8 +739,8 @@ const deleteClass = asyncHandler(async (req, res) => {
 //@access private
 const getEducationGroupForClass = asyncHandler(async (req, res) => {
   try {
-    const { jCenter } = req.body;
-    let educationGroup = await educationModel.loadClassEducationGroup(jCenter);
+    const { jCenter, departmentId } = req.body;
+    let educationGroup = await educationModel.loadClassEducationGroup(jCenter, departmentId);
     res.status(200).json({ educationGroup });
   } catch (err) {
     console.log(err);
@@ -579,7 +748,7 @@ const getEducationGroupForClass = asyncHandler(async (req, res) => {
   }
 });
 
-//@route Post /v1/education/getEducationGroupForClass
+//@route Post /v1/education/getEducationDepartmentForClass
 //@access private
 const getEducationDepartmentForClass = asyncHandler(async (req, res) => {
   try {
@@ -643,6 +812,59 @@ const getmemberInfo = asyncHandler(async (req, res) => {
   }
 });
 
+//@route Get /v1/education/getmemberInfo
+//@access private
+const getTeacherInfo = asyncHandler(async (req, res) => {
+  try {
+    const userID = req.user.ID;
+    let teacherInfo = await educationModel.getTeacherInfo(userID);
+    res.status(200).json({ teacherInfo });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "خطا در دریافت اطلاعات" });
+  }
+});
+
+//@route Get /v1/education/getmemberInfo
+//@access private
+const getTeacherWeeklySchedule = asyncHandler(async (req, res) => {
+  try {
+    const userID = req.user.ID;
+    let weeklySchedule = await educationModel.getTeacherWeeklySchedule(userID);
+    res.status(200).json({ weeklySchedule });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "خطا در دریافت اطلاعات" });
+  }
+});
+
+//@route Get /v1/education/getmemberInfo
+//@access private
+const getTeacherCenter = asyncHandler(async (req, res) => {
+  try {
+    const userID = req.user.ID;
+    let teacherCenter = await educationModel.getTeacherCenter(userID);
+    res.status(200).json({ teacherCenter });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "خطا در دریافت اطلاعات" });
+  }
+});
+
+//@route Get /v1/education/getmemberInfo
+//@access private
+const getTeacherClass = asyncHandler(async (req, res) => {
+  try {
+    const userID = req.user.ID;
+    const { classType } = req.body;
+    let teacherClasess = await educationModel.getTeacherClass(classType, userID);
+    res.status(200).json({ teacherClasess });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "خطا در دریافت اطلاعات" });
+  }
+});
+
 //@route get /api/v1/education/addTeacherToDb
 //@access private
 const submitMember = asyncHandler(async (req, res) => {
@@ -663,7 +885,12 @@ const getClassListForMembers = asyncHandler(async (req, res) => {
   try {
     const { listMood } = req.body;
     const userID = req.user.ID;
-    let membersClass = await educationModel.loadClassListForMember(listMood, userID);
+    let membersClass;
+    if (listMood === 'Active') {
+      membersClass = await educationModel.getActiveClasses(0);
+    } else {
+      membersClass = await educationModel.loadClassListForMember(listMood, userID);
+    }
     res.status(200).json({ membersClass });
   } catch (err) {
     console.log(err);
@@ -681,6 +908,8 @@ const addClassToUserCart = asyncHandler(async (req, res) => {
     let addCartRS = await educationModel.addClassToUserCart(userID, classItem.ID, classItem.expense);
     if (addCartRS > 0) {
       res.status(200).json({ message: 'اطلاعات با موفقیت ثبت شد', addCartRS: addCartRS });
+    } else if (addCartRS === -1) {
+      res.status(500).json({ message: "شما قبلا در این کلاس ثبت نام کرده اید" });
     } else {
       res.status(500).json({ message: "خطا در ثبت اطلاعات" });
     }
@@ -696,6 +925,7 @@ const loadUserCart = asyncHandler(async (req, res) => {
   try {
     const userID = req.user.ID;
     let cart_item = await educationModel.loadUserCart(userID);
+    console.log(userID);
     res.status(200).json({ cart_item });
   } catch (err) {
     console.log(err);
@@ -710,6 +940,34 @@ const removeFromCart = asyncHandler(async (req, res) => {
     const userID = req.user.ID;
     let removeFromCart = await educationModel.removeFromCart(userID, req.body.classId);
     res.status(200).json({ removeFromCart });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "خطا در دریافت اطلاعات" });
+  }
+});
+
+//@route Post /v1/education/removeFromCart
+//@access private
+const addCenterToTeacher = asyncHandler(async (req, res) => {
+  try {
+    const userID = req.user.ID;
+    let addCenterToTeacher = await educationModel.addCenterToTeacher(userID, req.body.selectedCenterID);
+    res.status(200).json({ addCenterToTeacher });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "خطا در دریافت اطلاعات" });
+  }
+});
+
+//@route Post /v1/education/submitUserCancelRequest
+//@access private
+const submitUserCancelRequest = asyncHandler(async (req, res) => {
+  try {
+    const userID = req.user.ID;
+    const { classId } = req.body;
+    let cancelReqRS = await educationModel.submitUserCancelRequest(userID, classId);
+    console.log(cancelReqRS);
+    res.status(200).json({ message: 'درخواست با موفقیت ثبت شد' });
   } catch (err) {
     console.log(err);
     res.status(500).json({ message: "خطا در دریافت اطلاعات" });
@@ -737,19 +995,21 @@ const applyDiscountCode = asyncHandler(async (req, res) => {
 const goForCartPayment = asyncHandler(async (req, res) => {
   try {
     const userID = req.user.ID;
-    let classRS = await educationModel.checkCartClassToEnrollForMoodle(userID);
+    let userData = await educationModel.getUserDetail(userID);
+    let classRS = await educationModel.checkCartClassToManageRegister(userID);
     if (classRS.length > 0) {
       classRS.forEach(async (classItem) => {
-        if (classItem['moodle_course_id'] > 0) {
-          let statement = `SELECT * FROM user__info WHERE ID=6`;
-          let query = mysql.format(statement, []);
-          let userData = await educationModel.dbQuery_promise(query);
-          await moodleOBJ.enrollUserInCourse(userData[0]['moodle_user_id'], classItem['moodle_course_id']);
+        if (classItem['delivery_id'] === 3) {// register for offline class
+          await educationModel.enrollUserToOfflineClass(userData[0], classItem);
         }
-        console.log(classItem['moodle_course_id']);
+        if (classItem['delivery_id'] === 1 || classItem['delivery_id'] === 2) {// register for online class
+          await educationModel.enrollUserToOnlineClass(userData[0], classItem);
+        }
       });
+      res.status(200).json({ message: 'ثبت نام با موفقیت انجام شد', classItems: classRS });
+    } else {
+      res.status(404).json({ message: 'لیست کلاس ها خالی است' });
     }
-    res.status(200).json({ classRS });
   } catch (err) {
     console.log(err);
     res.status(500).json({ message: "خطا در ثبت اطلاعات" });
@@ -773,12 +1033,67 @@ const sendMoodleReq = asyncHandler(async (req, res) => {
   }
 });
 
+//@route Post /v1/education/getEducationGroupForClass
+//@access private
+const sendAdobeReq = asyncHandler(async (req, res) => {
+  try {
+    let statement = `SELECT * FROM user__info WHERE ID=6`;
+    let query = mysql.format(statement, []);
+    let userData = await educationModel.dbQuery_promise(query);
+    await adobeOBJ.loginToAdobeAsAdmin();
+    // let adobeRS = await adobeOBJ.createUser(userData[0]['fname'], userData[0]['lname'], userData[0]['mobile'], userData[0]['mobile'] + '@jjqc.ir');
+
+    // let folderScoId = await adobeOBJ.getScos('content');
+    // let adobeRS = await adobeOBJ.getScosFromContents(folderScoId,'Shared Recordings');
+
+    // let folderScoId = await adobeOBJ.getScos('content');
+    // await adobeOBJ.createFolder('new class',folderScoId);
+
+
+    // let adobeRS = await adobeOBJ.createMeetingInFolder('کلاس تستی', 'my-meeting-url', 15605528);
+    // console.log(adobeRS["sco-id"]);
+    // console.log(adobeRS["url-path"]);
+
+
+    let classData = await educationModel.getClassData(1);
+    if (classData[0]['adobe_dir_sco_id'] === null) {
+      let folderScoId = await adobeOBJ.getScos('content');
+      let adobe_dir_sco_id = await adobeOBJ.createFolder(classData[0]['title'], folderScoId);
+      statement = `UPDATE classes__info SET adobe_dir_sco_id=? WHERE ID=?`;
+      query = mysql.format(statement, [adobe_dir_sco_id, 1]);
+      await educationModel.dbQuery_promise(query);
+      classData[0]['adobe_dir_sco_id'] = adobe_dir_sco_id;
+    }
+    if (classData[0]['adobe_meeting_url'] === null) {
+      let adobeRS = await adobeOBJ.createMeetingInFolder(classData[0]['title'], 'test' + classData[0]['code'], classData[0]['adobe_dir_sco_id']);
+      statement = `UPDATE classes__info SET adobe_meeting_url=? , adobe_meeting_sco=? WHERE ID=?`;
+      query = mysql.format(statement, [adobeRS["url-path"], adobeRS["sco-id"], 1]);
+      await educationModel.dbQuery_promise(query);
+      classData[0]['adobe_meeting_sco'] = adobeRS["sco-id"];
+      classData[0]['adobe_meeting_url'] = adobeRS["url-path"];
+    }
+
+    // await adobeOBJ.getMeetingRecordings(classData[0]['adobe_meeting_sco']);
+    // res.status(200).json({ message: 'ok' }); 
+
+    await adobeOBJ.addTeacherToMeeting(userData[0]['adobe_principle_id'], classData[0]['adobe_meeting_sco']);
+    let meetingURL = adobeOBJ.loginToMeetingAsHost(userData[0]['mobile'], userData[0]['mobile'], classData[0]['adobe_meeting_url']);
+    res.status(200).json({ meetingURL: meetingURL });
+
+    // console.log('adobeRS:' + adobeRS);
+  } catch (err) {
+    console.log('eror');
+    console.log(err);
+    res.status(500).json({ message: "خطا در ثبت اطلاعات" });
+  }
+});
+
 
 module.exports = {
   getAllEducationGroup,
   getMainGroup,
   uploadDocument,
-  addEducationInfoToDb,
+  submitEducationGroup,
   deleteEducationGroup,
   getAllLesson,
   getLessonType,
@@ -820,13 +1135,28 @@ module.exports = {
   getmemberInfo,
   submitMember,
   getClassListForMembers,
-  sendMoodleReq,
   addClassToUserCart,
   loadUserCart,
   removeFromCart,
+  submitUserCancelRequest,
   applyDiscountCode,
   goForCartPayment,
   getLessonTeacherData,
+  handleEnterOnlineClass,
+  handleEnterMoodle,
+  getMeetingRecordings,
+  playRecordedSessionVideo,
   submitClassTeacherRel,
-  updateClassTeacherRelStatus
+  updateClassTeacherRelStatus,
+  sendMoodleReq,
+  sendAdobeReq,
+  getLessonTeacher,
+  changeClassStatus,
+  getClassDeliveryType,
+  getTeacherInfo,
+  getTeacherClass,
+  getTeacherWeeklySchedule,
+  getTeacherCenter,
+  addCenterToTeacher,
+  getTeacherLesson
 };

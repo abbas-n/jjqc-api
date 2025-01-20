@@ -112,35 +112,36 @@ const checkVerifyCode = asyncHandler(async (req, res) => {
 //@route POST /api/v1/auth/register
 //@access public
 const registerUser = asyncHandler(async (req, res) => {
-  const { mobile, fname, lname, pass } = req.body;
+  try {
 
-  if (!mobile || !pass || !fname || !lname) {
-    res.status(400);
-    throw new Error("تمامی موارد فرم الزامی هستند");
-  }
-  let checkIsNumber = tools.is_number(mobile);
-  let checkIsMobile = tools.is_mobile(mobile);
-  if (!checkIsNumber || mobile == '' || !checkIsMobile) {
-    res.status(400);
-    throw new Error("شماره موبایل مجاز نیست");
-  }
+    const { mobile, fname, lname, pass } = req.body;
 
-  // checkIsNumber = tools.is_number(ncode);
-  // if (!checkIsNumber || ncode == '') {
-  //   res.status(400);
-  //   throw new Error("کد ملی مجاز نیست");
-  // }
+    if (!mobile || !pass || !fname || !lname) {
+      res.status(400);
+      throw new Error("تمامی موارد فرم الزامی هستند");
+    }
+    let checkIsNumber = tools.is_number(mobile);
+    let checkIsMobile = tools.is_mobile(mobile);
+    if (!checkIsNumber || mobile == '' || !checkIsMobile) {
+      res.status(400);
+      throw new Error("شماره موبایل مجاز نیست");
+    }
 
-  if (!tools.is_string(fname) || !tools.is_string(lname)) {
-    res.status(400);
-    throw new Error("نام و نام خانوادگی مجاز نیست");
-  }
+    // checkIsNumber = tools.is_number(ncode);
+    // if (!checkIsNumber || ncode == '') {
+    //   res.status(400);
+    //   throw new Error("کد ملی مجاز نیست");
+    // }
 
-  const sqlSearch = "SELECT * FROM user__info WHERE mobile = ?";
-  const search_query = mysql.format(sqlSearch, [mobile]);
+    if (!tools.is_string(fname) || !tools.is_string(lname)) {
+      res.status(400);
+      throw new Error("نام و نام خانوادگی مجاز نیست");
+    }
 
-  await dbCon.query(search_query, async (err, result) => {
-    if (err) throw (err)
+    const sqlSearch = "SELECT * FROM user__info WHERE mobile = ?";
+    const search_query = mysql.format(sqlSearch, [mobile]);
+
+    let result = await PModel.dbQuery_promise(search_query);
     if (result.length != 0) {
       res.status(400).json({ message: "کاربر با این اطلاعات قبلا ثبت شده است" });
     } else {
@@ -148,18 +149,19 @@ const registerUser = asyncHandler(async (req, res) => {
       const hashedPassword = await bcrypt.hash(pass, 10);
       let sqlInsert = "INSERT INTO user__info(code,fname,lname,mobile,password) VALUES (?,?,?,?,?)";
       let insert_query = mysql.format(sqlInsert, [uCode, fname, lname, mobile, hashedPassword]);
-      dbCon.query(insert_query, (err, result) => {
-        if (err) throw (err)
-        if (result.insertId > 0) {
-          sqlInsert = "INSERT INTO user__them_setting(user_id) VALUES (?)";
-          insert_query = mysql.format(sqlInsert, [result.insertId]);
-          res.status(200).json({ message: 'کاربر با موفقیت ایجاد شد' });
-        } else {
-          res.status(400).json({ message: 'خطا در ثبت کاربر' });
-        }
-      });
+      let queryRS = await PModel.dbQuery_promise(insert_query);
+      if (queryRS.insertId > 0) {
+        sqlInsert = "INSERT INTO user__them_setting(user_id) VALUES (?)";
+        insert_query = mysql.format(sqlInsert, [queryRS.insertId]);
+        await PModel.dbQuery_promise(insert_query);
+        res.status(200).json({ message: 'کاربر با موفقیت ایجاد شد' });
+      } else {
+        res.status(400).json({ message: 'خطا در ثبت کاربر' });
+      }
     }
-  }) //end of dbCon.query()
+  } catch (error) {
+
+  }
 });
 
 //@desc Login user

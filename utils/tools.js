@@ -194,13 +194,5 @@ module.exports = {
         });
         return rs;
     },
-    
-    getRoutDistanceBetweenTwoPoints: async (orginLat, originLng, destLat, destLng) => {
-        let url = "https://api.neshan.org/v4/direction/no-traffic?parameters?type=car&avoidTrafficZone=false&origin=" + orginLat + ',' + originLng + '&destination=' + destLat + ',' + destLng
-        const headers = { 'Content-Type': 'application/json', 'Api-Key': 'service.545010d493eb4797bc5070742809bb62' };
-        var rs = await module.exports.get_request(url, headers);
-        rs = JSON.parse(rs, true);
-        return rs['routes'][0]['legs'][0]['distance']['value'];
-    }
 }
 

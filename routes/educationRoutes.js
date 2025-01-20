@@ -8,7 +8,7 @@ router.use(validateToken);
 router.get("/getAllEducationGroup", educationCtrl.getAllEducationGroup);
 router.get("/getMainGroup", educationCtrl.getMainGroup);
 router.post("/uploadDocument", educationCtrl.uploadDocument);
-router.post("/submitEducationGroup", educationCtrl.addEducationInfoToDb);
+router.post("/submitEducationGroup", educationCtrl.submitEducationGroup);
 router.post("/deleteEducationGroup", educationCtrl.deleteEducationGroup);
 
 //-------------------------Lesson------------------------------------
@@ -43,8 +43,15 @@ router.post("/deleteTeacher", educationCtrl.deleteTeacher);
 router.post("/getJcenterEducationGroups", educationCtrl.getJcenterEducationGroups);
 router.post("/getEducationGroupLessonData", educationCtrl.getEducationGroupLessonData);
 router.post("/getTeacherLessonRelationData", educationCtrl.getTeacherLessonRelationData);
+router.get("/getTeacherLessonRelationData", educationCtrl.getTeacherLesson);
 router.post("/submitTeacherLessonRel", educationCtrl.submitTeacherLessonRel);
 router.post("/updateTeacherLessonRelStatus", educationCtrl.updateTeacherLessonRelStatus);
+router.post("/getLessonTeacher", educationCtrl.getLessonTeacher);
+router.post("/getTeacherClass", educationCtrl.getTeacherClass);
+router.get("/getTeacherInfo", educationCtrl.getTeacherInfo);
+router.get("/getTeacherWeeklySchedule", educationCtrl.getTeacherWeeklySchedule);
+router.get("/getTeacherCenter", educationCtrl.getTeacherCenter);
+router.post("/addCenterToTeacher", educationCtrl.addCenterToTeacher);
 
 
 //-------------------------Cart------------------------------------
@@ -61,7 +68,7 @@ router.get("/getAllClassesDelivery", educationCtrl.getClassesDelivery);
 router.get("/getAllClassesType", educationCtrl.getClassesType);
 router.post("/getClassEducationGroup", educationCtrl.getEducationGroupForClass);
 router.post("/getDepartmentForClass", educationCtrl.getEducationDepartmentForClass);
-router.post("/getClassesson", educationCtrl.getClassLesson);
+router.post("/getClassLesson", educationCtrl.getClassLesson);
 router.post("/submitClasses", educationCtrl.addClassInfoToDb);
 router.post("/deleteClasses", educationCtrl.deleteClass);
 router.get("/getCertificateInfo", educationCtrl.getCertificateInfo);
@@ -70,6 +77,12 @@ router.get("/getUserClassesToCheckForRegister", educationCtrl.getUserClassesToCh
 router.post("/getLessonTeacherData", educationCtrl.getLessonTeacherData);
 router.post("/submitClassTeacherRel", educationCtrl.submitClassTeacherRel);
 router.post("/updateClassTeacherRelStatus", educationCtrl.updateClassTeacherRelStatus);
+router.post("/changeClassStatus", educationCtrl.changeClassStatus);
+router.post("/getClassDeliveryType", educationCtrl.getClassDeliveryType);
+router.post("/handleEnterMoodle", educationCtrl.handleEnterMoodle);
+router.post("/handleEnterOnlineClass", educationCtrl.handleEnterOnlineClass);
+router.post("/getMeetingRecordings", educationCtrl.getMeetingRecordings);
+router.post("/playRecordedSessionVideo", educationCtrl.playRecordedSessionVideo);
 
 
 
@@ -78,7 +91,9 @@ router.post("/updateClassTeacherRelStatus", educationCtrl.updateClassTeacherRelS
 router.get("/getmemberInfo", educationCtrl.getmemberInfo);
 router.post("/submitMember", educationCtrl.submitMember);
 router.post("/getClassListForMembers", educationCtrl.getClassListForMembers);
+router.post("/submitUserCancelRequest", educationCtrl.submitUserCancelRequest);
 
 router.get("/sendMoodleReq", educationCtrl.sendMoodleReq);
+router.get("/sendAdobeReq", educationCtrl.sendAdobeReq);
 
 module.exports = router; 

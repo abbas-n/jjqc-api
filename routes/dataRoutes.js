@@ -27,9 +27,32 @@ router.get("/getCoursesData", dataCtrl.getCoursesData);
 router.post("/coursePreSignup", dataCtrl.coursePreSignup);
 router.post("/courseCancelPreSignup", dataCtrl.courseCancelPreSignup);
 //-----------------------------------------------------------------------------------
-router.get("/getAllJcentersData", dataCtrl.getAllJcentersData);
+router.post("/getJcenterChildCenters", dataCtrl.getJcenterChildCenters);
+router.post("/getAllJcentersData", dataCtrl.getAllJcentersData); 
 router.post("/submitJcenter", dataCtrl.submitJcenter);
 router.post("/deleteJcenter", dataCtrl.deleteJcenter); 
+//-----------------------------------------------------------------------------------
+router.post("/getAllJbuildingsData", dataCtrl.getAllJbuildingsData);
+router.post("/submitJbuilding", dataCtrl.submitJbuilding); 
+router.post("/submitBuildingRoomRel", dataCtrl.submitBuildingRoomRel);
+router.post("/getBuildingRoomRelationData", dataCtrl.getBuildingRoomRelationData);
+router.post("/updateBuildingRoomRelStatus", dataCtrl.updateBuildingRoomRelStatus);
+router.post("/getAllJbuildingsRoomsData", dataCtrl.getAllJbuildingsRoomsData);
+router.post("/getJbuildingsRoomsData", dataCtrl.getJbuildingsRoomsData);
+router.post("/getClassHoldTimeData", dataCtrl.getClassHoldTimeData);
+router.post("/submitHoldTime", dataCtrl.submitHoldTime);
+
+router.post("/updateHoldTimeStatus", dataCtrl.updateHoldTimeStatus);
+router.post("/getClassHoldTime", dataCtrl.getClassHoldTime);
+router.post("/getClassSession", dataCtrl.getClassSession);
+router.post("/submitSession", dataCtrl.submitSession);
+router.post("/deleteSession", dataCtrl.deleteSession);
+router.post("/deleteAllSession", dataCtrl.deleteAllSession);
+router.post("/autoSessionGenerator", dataCtrl.autoSessionGenerator);
+router.post("/getClassUserList", dataCtrl.getClassUserList);
+router.post("/changeUserSessionStatus", dataCtrl.changeUserSessionStatus);
+router.post("/submitUserListInfo", dataCtrl.submitUserListInfo);
+// router.post("/deleteJcenter", dataCtrl.deleteJcenter); 
 //-----------------------------------------------------------------------------------
 router.get("/getAllExamcentersData", dataCtrl.getAllExamcentersData);
 router.post("/submitExamcenter", dataCtrl.submitExamcenter);
@@ -38,6 +61,7 @@ router.post("/deleteExamcenter", dataCtrl.deleteExamcenter);
 router.post("/submitJdepartment", dataCtrl.submitJdepartment);
 router.post("/deleteJdepartment", dataCtrl.deleteJdepartment);
 router.post("/getJCenterDepartment", dataCtrl.getJCenterDepartment);
+router.post("/getJCenterWithSubCenters", dataCtrl.getJCenterWithSubCenters);
 router.get("/getAllJdepartmentsData", dataCtrl.getAllJdepartmentsData);
 //-----------------------------------------------------------------------------------
 router.get("/getRequestsFilters", dataCtrl.getRequestsFilters);
@@ -49,6 +73,7 @@ router.post("/deleteJrequest", dataCtrl.deleteJrequest);
 //------------------------Dashboard---------------------------------------------
 router.get("/loadLastLogin", dataCtrl.loadLastLogin);
 router.get("/loadDashboardData", dataCtrl.loadDashboardData);
+router.get("/loadMemberWeekLyPlan", dataCtrl.loadMemberWeekLyPlan);
 
 
 

@@ -1,9 +1,10 @@
 const { parse } = require("dotenv");
 const { dbCon, mysql } = require("../config/dbConnection");
-const { v4: uuidv4 } = require('uuid');
 const tools = require("../utils/tools");
+const moment = require('moment-timezone');
 
 const bcrypt = require("bcrypt");
+const { query } = require("express");
 module.exports = {
     dbQuery_promise: async (query) => {
         let rs = await new Promise((resolve, reject) => {
@@ -13,6 +14,21 @@ module.exports = {
             });
         });
         return rs;
+    },
+    getUserDetail: async (userId) => {
+        let statement = `SELECT * FROM user__info WHERE ID=?`;
+        let query = mysql.format(statement, [userId]);
+        let userData = await module.exports.dbQuery_promise(query);
+        return userData;
+    },
+    getUserDetailByTeacherId: async (teacherId) => {
+        let statement = `SELECT user__info.*
+                FROM user__info
+                INNER JOIN teachers__info ON teachers__info.user_id = user__info.ID
+                WHERE teachers__info.ID =?`;
+        let query = mysql.format(statement, [teacherId]);
+        let userData = await module.exports.dbQuery_promise(query);
+        return userData;
     },
     loadEducationGroup: async (groupId) => {
         let statement, query, queryRS;
@@ -284,6 +300,29 @@ WHERE classes__teacher_relation.classe_id=?`;
         queryRS = await module.exports.dbQuery_promise(query);
         return queryRS;
     },
+
+
+    loadLessonTeacher: async (lessonId) => {
+        let statement, query, queryRS;
+        statement = `
+            SELECT 
+            teachers__info.*,
+            CONCAT(f_name,' ',l_name) AS full_name,
+            teachers__degree.title AS degree_title , 
+            teachers__job.title AS job_title,
+            jcenters__info.title AS jcenters_title
+            FROM teachers__info
+            INNER JOIN teachers__degree ON teachers__info.degree_id = teachers__degree.ID
+            INNER JOIN teachers__job ON teachers__info.job_id = teachers__job.ID
+            INNER JOIN jcenters__info ON teachers__info.jcenters_id = jcenters__info.ID
+            INNER JOIN teachers__lesson_relation ON teachers__info.ID = teachers__lesson_relation.teacher_id
+        	WHERE teachers__lesson_relation.lesson_id = ?`;
+        query = mysql.format(statement, [lessonId]);
+        queryRS = await module.exports.dbQuery_promise(query);
+        return queryRS;
+    },
+
+
     loadTeacherDegree: async () => {
         let statement, query, queryRS;
         statement = `SELECT * FROM teachers__degree`;
@@ -312,13 +351,12 @@ WHERE classes__teacher_relation.classe_id=?`;
         queryRS = await module.exports.dbQuery_promise(query);
         return queryRS;
     },
-    loadClassEducationGroup: async (jCenterId) => {
+    loadClassEducationGroup: async (jCenterId, departmentId) => {
         let statement, query, queryRS;
         statement = `SELECT education__group.* FROM education__group
-INNER JOIN jcenters__eduGroup_relation ON 
-jcenters__eduGroup_relation.education_group_id = education__group.ID
-WHERE jcenters__eduGroup_relation.jcenter_id =?`;
-        query = mysql.format(statement, [jCenterId]);
+        INNER JOIN jcenters__eduGroup_relation ON jcenters__eduGroup_relation.education_group_id = education__group.ID
+        WHERE jcenters__eduGroup_relation.jcenter_id =? AND jcenters__eduGroup_relation.department_id =?`;
+        query = mysql.format(statement, [jCenterId, departmentId]);
         queryRS = await module.exports.dbQuery_promise(query);
         return queryRS;
     },
@@ -357,7 +395,7 @@ WHERE lesson__eduGroup_relation.education_group_id = ?`;
         return queryRS;
     },
     addTeacherInfoToDb: async (queryBody, userID) => {
-        let statement, query, queryRS, userRs;
+        let statement, query, queryRS, userRs, addUserResult;
         let newUser = false;
         if (queryBody.ID) {
             statement = `UPDATE teachers__info SET f_name=?, l_name=?, father_name=?, gender=?, national_code=?, mobile=?, mobile2=?, email=?, image_url=?, place_of_birth=?, birthday=?, is_foreigner=?, job_id=?, degree_id=?, biography=?, user_name=?, password=?, postal_address=?, insurance_code=?, sheba=?, bank_acount=?,department_id=?,editor_user_id=?,jcenters_id=? WHERE ID=?`;
@@ -370,14 +408,23 @@ WHERE lesson__eduGroup_relation.education_group_id = ?`;
         if (newUser && queryRS.insertId) {
             let teacherId = queryRS.insertId
             let hashedPassword = await bcrypt.hash(queryBody.password, 10);
-            let sqlInsert = "INSERT INTO user__info(code,fname,lname,mobile,password) VALUES (?,?,?,?,?)";
-            let insert_query = mysql.format(sqlInsert, ['T' + teacherId, queryBody.f_name, queryBody.l_name, queryBody.mobile, hashedPassword]);
+            let sqlInsert = "INSERT INTO user__info(code,fname,lname,mobile,password,permission) VALUES (?,?,?,?,?,?)";
+            let insert_query = mysql.format(sqlInsert, ['T' + teacherId, queryBody.f_name, queryBody.l_name, queryBody.mobile, hashedPassword, 8]);
             userRs = await module.exports.dbQuery_promise(insert_query);
+
+            let themeInsert = "INSERT INTO `user__them_setting`(`user_id`) VALUES (?)";
+            let insert_theme_query = mysql.format(themeInsert, [userRs.insertId]);
+            userRs = await module.exports.dbQuery_promise(insert_theme_query);
+
+
+            let sqlUpdate = "UPDATE teachers__info user_id=? SET WHERE ID=?";
+            let update_query = mysql.format(sqlUpdate, [userRs.insertId, teacherId]);
+            userRs = await module.exports.dbQuery_promise(update_query);
         } else {
-            let hashedPassword = await bcrypt.hash(queryBody.password, 10);
-            let sqlInsert = "UPDATE user__info SET fname=?,lname=?,mobile=?,password=? WHERE code=?";
-            let insert_query = mysql.format(sqlInsert, [queryBody.f_name, queryBody.l_name, queryBody.mobile, hashedPassword, 'T' + queryBody.ID]);
-            userRs = await module.exports.dbQuery_promise(insert_query);
+            // let hashedPassword = await bcrypt.hash(queryBody.password, 10);
+            // let sqlInsert = "UPDATE user__info SET fname=?,lname=?,mobile=?,password=? WHERE code=?";
+            // let insert_query = mysql.format(sqlInsert, [queryBody.f_name, queryBody.l_name, queryBody.mobile, hashedPassword, 'T' + queryBody.ID]);
+            // userRs = await module.exports.dbQuery_promise(insert_query);
         }
         return queryRS;
     },
@@ -388,6 +435,15 @@ WHERE lesson__eduGroup_relation.education_group_id = ?`;
         queryRS = await module.exports.dbQuery_promise(query);
         return queryRS;
     },
+
+    getTeacherIdByUserId: async (userID) => {
+        let statement, query, queryRS;
+        statement = `SELECT ID FROM teachers__info WHERE user_id=?`;
+        query = mysql.format(statement, [userID]);
+        queryRS = await module.exports.dbQuery_promise(query);
+        return queryRS[0]['ID'];
+    },
+
     getTeacherLessonRelationData: async (teacherId) => {
         let statement, query, queryRS;
         statement = `SELECT
@@ -419,9 +475,9 @@ WHERE lesson__eduGroup_relation.education_group_id = ?`;
 
     submitClassTeacherRel: async (teacherId, classId) => {
         let statement, query, queryRS;
+
         statement = `INSERT INTO classes__teacher_relation(classe_id,teacher_id) VALUES (?,?)`;
         query = mysql.format(statement, [classId, teacherId]);
-        console.log(query);
         queryRS = await module.exports.dbQuery_promise(query);
         if (queryRS.insertId > 0) {
             return queryRS.insertId;
@@ -449,9 +505,19 @@ WHERE lesson__eduGroup_relation.education_group_id = ?`;
         }
         statement = `UPDATE classes__teacher_relation SET status=? WHERE ID=?`;
         query = mysql.format(statement, [needStatus, classTeacherRelId]);
+        console.log(query);
         queryRS = await module.exports.dbQuery_promise(query);
         return queryRS;
     },
+
+    updateClassStatus: async (classesId, targetStatus) => {
+        let statement, query, queryRS;
+        statement = `UPDATE classes__info SET status=? WHERE ID=?`;
+        query = mysql.format(statement, [targetStatus, classesId]);
+        queryRS = await module.exports.dbQuery_promise(query);
+        return queryRS;
+    },
+
     getUserClassesToCheckForRegister: async (userId) => {
         let statement, query, queryRS;
         statement = `SELECT 
@@ -470,7 +536,8 @@ WHERE lesson__eduGroup_relation.education_group_id = ?`;
         statement = `
         SELECT 
         classes__info.*,
-        classes__delivery_type.title AS delivery_title,
+        GROUP_CONCAT(classes__delivery_relation.delivery_id) AS deliveryIds,
+        GROUP_CONCAT(classes__delivery_type.title) AS delivery_title,
         classes__type.title AS type_title,
         education__department.title AS department_title,
         education__group.title AS group_title,
@@ -480,14 +547,15 @@ WHERE lesson__eduGroup_relation.education_group_id = ?`;
         certificate__structure.title AS structure_title
         FROM classes__info
         INNER JOIN classes__type ON classes__info.type_id = classes__type.ID
-        INNER JOIN classes__delivery_type ON classes__info.delivery_id = classes__delivery_type.ID
+        INNER JOIN classes__delivery_relation ON classes__info.ID = classes__delivery_relation.classe_id
+        INNER JOIN classes__delivery_type ON classes__delivery_relation.delivery_id = classes__delivery_type.ID
         INNER JOIN education__department ON classes__info.department_id = education__department.ID
         INNER JOIN education__group ON classes__info.group_id = education__group.ID
         INNER JOIN jcenters__info ON classes__info.jcenters_id = jcenters__info.ID
         LEFT JOIN certificate__info ON classes__info.certificate_id = certificate__info.ID
         LEFT JOIN certificate__structure ON classes__info.certificate_structure_id = certificate__structure.ID
         INNER JOIN lesson__info ON classes__info.lesson_id = lesson__info.ID` +
-            (jcenterId > 0 ? ` WHERE classes__info.jcenters_id=?` : ``);
+            (jcenterId > 0 ? ` WHERE classes__info.jcenters_id=?` : ``) + ` GROUP BY classes__info.ID`;
 
         let query = mysql.format(statement, [jcenterId]);
         queryRS = await module.exports.dbQuery_promise(query);
@@ -497,6 +565,13 @@ WHERE lesson__eduGroup_relation.education_group_id = ?`;
         let statement, query, queryRS;
         statement = `SELECT * FROM classes__delivery_type`;
         query = mysql.format(statement, [0]);
+        queryRS = await module.exports.dbQuery_promise(query);
+        return queryRS;
+    },
+    loadClassDeliveryType: async (classId) => {
+        let statement, query, queryRS;
+        statement = `SELECT * FROM classes__delivery_relation WHERE classe_id=?`;
+        query = mysql.format(statement, classId);
         queryRS = await module.exports.dbQuery_promise(query);
         return queryRS;
     },
@@ -537,7 +612,7 @@ WHERE lesson__eduGroup_relation.education_group_id = ?`;
         }
 
     },
-    addClassInfoToDb: async (queryBody, userID) => {
+    addClassInfoToDb: async (queryBody, userID, deliveryResult) => {
 
         queryBody.start_date = module.exports.formatDateTime(queryBody.start_date, 'Date');
         queryBody.end_date = module.exports.formatDateTime(queryBody.end_date, 'Date');
@@ -548,19 +623,50 @@ WHERE lesson__eduGroup_relation.education_group_id = ?`;
 
         let statement, query, queryRS, userRs;
         if (queryBody.ID) {
-            statement = `UPDATE classes__info SET jcenters_id=?,department_id=?, group_id=?, lesson_id=?, type_id=?, delivery_id=?, title=?, description=?, headlines=?, expense=?, cancellation_penalty=?, capacity=?, approved_time=?, class_sessions_number=?, absent_allow=?, gender=?, image_url=?, image_alt_text=?, start_date=?, end_date=?, end_register_date=?, end_date_time=?, end_cancel_date=?, end_cancel_time=?,status=?,certificate_id=?,certificate_structure_id=?,department_signature_need=?,absence_conditions=?,debt_free_condition=?,average_condition=?,obtaining_condition=?,end_class_condition=?,delivery_possibility=?,delivery_price=?,physical_certificate_fee=?,editor_user_id=? WHERE ID=?`;
+            statement = `UPDATE classes__info SET jcenters_id=?,department_id=?, group_id=?, lesson_id=?, type_id=?, delivery_id=?, title=?, description=?, headlines=?, expense=?, cancellation_penalty=?, capacity=?, approved_time=?, class_sessions_number=?, absent_allow=?, gender=?, image_url=?, image_alt_text=?, start_date=?, end_date=?, end_register_date=?, end_date_time=?, end_cancel_date=?, end_cancel_time=?,status=?,certificate_id=?,certificate_structure_id=?,department_signature_need=?,absence_conditions=?,debt_free_condition=?,average_condition=?,obtaining_condition=?,end_class_condition=?,delivery_possibility=?,delivery_price=?,physical_certificate_fee=?,editor_user_id=?,event_type=? WHERE ID=?`;
         } else {
-            statement = `INSERT INTO classes__info(jcenters_id,department_id, group_id, lesson_id, type_id, delivery_id, title, description, headlines, expense, cancellation_penalty, capacity, approved_time, class_sessions_number, absent_allow, gender, image_url, image_alt_text, start_date, end_date, end_register_date, end_date_time, end_cancel_date, end_cancel_time,status,certificate_id,certificate_structure_id,department_signature_need,absence_conditions,debt_free_condition,average_condition,obtaining_condition,end_class_condition,delivery_possibility,delivery_price,physical_certificate_fee,creator_user_id) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`;
+            statement = `INSERT INTO classes__info(jcenters_id,department_id, group_id, lesson_id, type_id, delivery_id, title, description, headlines, expense, cancellation_penalty, capacity, approved_time, class_sessions_number, absent_allow, gender, image_url, image_alt_text, start_date, end_date, end_register_date, end_date_time, end_cancel_date, end_cancel_time,status,certificate_id,certificate_structure_id,department_signature_need,absence_conditions,debt_free_condition,average_condition,obtaining_condition,end_class_condition,delivery_possibility,delivery_price,physical_certificate_fee,creator_user_id,event_type) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`;
         }
 
-        query = mysql.format(statement, [queryBody.jcenters_id, queryBody.department_id, queryBody.group_id, queryBody.lesson_id, queryBody.type_id, queryBody.delivery_id, queryBody.title, queryBody.description, queryBody.headlines, queryBody.expense, queryBody.cancellation_penalty, queryBody.capacity, queryBody.approved_time, queryBody.class_sessions_number, queryBody.absent_allow, queryBody.gender, queryBody.image_url, queryBody.image_alt_text, queryBody.start_date, queryBody.end_date, queryBody.end_register_date, queryBody.end_date_time, queryBody.end_cancel_date, queryBody.end_cancel_time, queryBody.status, queryBody.certificate_id, queryBody.certificate_structure_id, queryBody.department_signature_need, queryBody.absence_conditions, queryBody.debt_free_condition, queryBody.average_condition, queryBody.obtaining_condition, queryBody.end_class_condition, queryBody.delivery_possibility, queryBody.delivery_price, queryBody.physical_certificate_fee, userID, queryBody.ID]);
+        query = mysql.format(statement, [queryBody.jcenters_id, queryBody.department_id, queryBody.group_id, queryBody.lesson_id, queryBody.type_id, queryBody.delivery_id, queryBody.title, queryBody.description, queryBody.headlines, queryBody.expense, queryBody.cancellation_penalty, queryBody.capacity, queryBody.approved_time, queryBody.class_sessions_number, queryBody.absent_allow, queryBody.gender, queryBody.image_url, queryBody.image_alt_text, queryBody.start_date, queryBody.end_date, queryBody.end_register_date, queryBody.end_date_time, queryBody.end_cancel_date, queryBody.end_cancel_time, queryBody.status, queryBody.certificate_id, queryBody.certificate_structure_id, queryBody.department_signature_need, queryBody.absence_conditions, queryBody.debt_free_condition, queryBody.average_condition, queryBody.obtaining_condition, queryBody.end_class_condition, queryBody.delivery_possibility, queryBody.delivery_price, queryBody.physical_certificate_fee , userID,queryBody.event_type, queryBody.ID]);
         queryRS = await module.exports.dbQuery_promise(query);
+
+        let classId = -1;
+        if (queryBody.ID) {
+            classId = queryBody.ID
+        } else {
+            classId = queryRS.insertId
+        }
+
+        if (classId > 0) {
+            queryRS = await module.exports.dbQuery_promise('DELETE FROM classes__delivery_relation WHERE classe_id=' + classId);
+            for (let i = 0; i < deliveryResult.length; i++) {
+                statement = 'INSERT INTO classes__delivery_relation(classe_id, delivery_id) VALUES (?,?)';
+                query = mysql.format(statement, [classId, deliveryResult[i]['delivery_id']]);
+                queryRS = await module.exports.dbQuery_promise(query);
+            }
+        }
+
         return queryRS;
     },
     deleteClass: async (classId) => {
         let statement, query, queryRS;
         statement = `DELETE FROM classes__info WHERE ID=?`;
         query = mysql.format(statement, [classId]);
+        queryRS = await module.exports.dbQuery_promise(query);
+        return queryRS;
+    },
+    getClassData: async (classId) => {
+        let statement, query, queryRS;
+        statement = `SELECT * FROM classes__info WHERE ID=?`;
+        query = mysql.format(statement, [classId]);
+        queryRS = await module.exports.dbQuery_promise(query);
+        return queryRS;
+    },
+    getOnlineClassSessionData: async (sessionId) => {
+        let statement, query, queryRS;
+        statement = `SELECT * FROM classes__session WHERE ID=?`;
+        query = mysql.format(statement, [sessionId]);
         queryRS = await module.exports.dbQuery_promise(query);
         return queryRS;
     },
@@ -579,30 +685,124 @@ WHERE lesson__eduGroup_relation.education_group_id = ?`;
         queryRS = await module.exports.dbQuery_promise(query);
         return queryRS;
     },
+    getTeacherInfo: async (userID) => {
+        let statement, query, queryRS;
+        statement = `SELECT 
+        teachers__info.*,
+        CONCAT(f_name,' ',l_name) AS full_name,
+        teachers__degree.title AS degree_title , 
+        teachers__job.title AS job_title,
+        jcenters__info.title AS jcenters_title
+        FROM teachers__info
+        INNER JOIN teachers__degree ON teachers__info.degree_id = teachers__degree.ID
+        INNER JOIN teachers__job ON teachers__info.job_id = teachers__job.ID
+        INNER JOIN jcenters__info ON teachers__info.jcenters_id = jcenters__info.ID
+        WHERE teachers__info.user_id=?`;
+        query = mysql.format(statement, [userID]);
+        queryRS = await module.exports.dbQuery_promise(query);
+        return queryRS;
+    },
+    getTeacherClass: async (classType, userID) => {
+        let statement, query, queryRS;
+        statement = `
+SELECT 
+classes__info.*
+FROM classes__info
+INNER JOIN classes__teacher_relation ON classes__teacher_relation.classe_id = classes__info.ID
+INNER JOIN teachers__info ON teachers__info.ID = classes__teacher_relation.teacher_id
+WHERE 
+classes__info.status IN (`+ (classType === 'Active' ? '"Active"' : '"Archive"') + `) AND 
+teachers__info.user_id =?`;
+        query = mysql.format(statement, [userID]);
+        queryRS = await module.exports.dbQuery_promise(query);
+        return queryRS;
+    },
+    getTeacherWeeklySchedule: async (userID) => {
+        let statement, query, queryRS;
+        statement = `SELECT 
+classes__hold_time.* ,
+jcenters__buildings.title AS Building,
+jcenters__building_rooms.title AS Room,
+classes__info.title As ClassName,
+classes__info.code AS ClassCode
+FROM classes__hold_time 
+INNER JOIN classes__info ON classes__hold_time.classes_id = classes__info.ID
+INNER JOIN jcenters__buildings ON classes__hold_time.buildings_id = jcenters__buildings.ID
+INNER JOIN jcenters__building_rooms ON classes__hold_time.room_id = jcenters__building_rooms.ID
+INNER JOIN classes__teacher_relation ON classes__teacher_relation.classe_id = classes__hold_time.classes_id
+INNER JOIN teachers__info ON classes__teacher_relation.teacher_id = teachers__info.ID
+WHERE
+teachers__info.user_id =?`;
+        query = mysql.format(statement, [userID]);
+        queryRS = await module.exports.dbQuery_promise(query);
+        return queryRS;
+    },
+    getTeacherCenter: async (userID) => {
+        let statement, query, queryRS;
+        statement = `SELECT jcenters__info.* 
+FROM 
+jcenters__info
+INNER JOIN teachers__jcenter_relation ON teachers__jcenter_relation.center_id = jcenters__info.ID
+INNER JOIN teachers__info ON teachers__jcenter_relation.teacher_id = teachers__info.ID
+WHERE 
+teachers__info.user_id =?`;
+        query = mysql.format(statement, [userID]);
+        queryRS = await module.exports.dbQuery_promise(query);
+        return queryRS;
+    },
     submitMemberInfoToDb: async (queryBody, userID) => {
         let statement, query, queryRS, userRs;
         statement = `UPDATE member__info SET f_name=?, l_name=?, father_name=?, gender=?, national_code=?, mobile=?, mobile2=?, email=?, image_url=?, place_of_birth=?, birthday=?, is_foreigner=?, job_id=?, degree_id=?,postal_address=?, sheba=?, bank_acount=?,editor_user_id=?,jcenters_id=?,biography=? WHERE ID=?`;
         query = mysql.format(statement, [queryBody.f_name, queryBody.l_name, queryBody.father_name, queryBody.gender, queryBody.national_code, queryBody.mobile, queryBody.mobile2, queryBody.email, queryBody.image_url, queryBody.place_of_birth, queryBody.birthday, queryBody.is_foreigner, queryBody.job_id, queryBody.degree_id, queryBody.postal_address, queryBody.sheba, queryBody.bank_acount, userID, queryBody.jcenters_id, queryBody.biography, queryBody.ID]);
-        console.log(query);
         queryRS = await module.exports.dbQuery_promise(query);
         statement = `UPDATE user__info SET jcenter_id=? WHERE ID=?`;
         query = mysql.format(statement, [queryBody.jcenters_id, queryBody.user_id]);
         queryRS = await module.exports.dbQuery_promise(query);
         return queryRS;
     },
+    getActiveClasses: async (jcenterId) => {
+        let statement, query, queryRS;
+        statement = `SELECT 
+        classes__info.*,
+        classes__delivery_type.title AS delivery_title,
+        classes__type.title AS type_title,
+        education__department.title AS department_title,
+        education__group.title AS group_title,
+        lesson__info.title AS lesson_title,
+        jcenters__info.title AS jcenters_title,
+        certificate__info.title AS certificate_title,
+        certificate__structure.title AS structure_title,
+        CONCAT(teachers__info.f_name , ' ' , teachers__info.l_name) AS teacher_name,
+        teachers__info.image_url AS Teacher_Picture
+        FROM classes__info
+        INNER JOIN classes__type ON classes__info.type_id = classes__type.ID
+        INNER JOIN classes__delivery_type ON classes__info.delivery_id = classes__delivery_type.ID
+        INNER JOIN education__department ON classes__info.department_id = education__department.ID
+        INNER JOIN education__group ON classes__info.group_id = education__group.ID
+        INNER JOIN jcenters__info ON classes__info.jcenters_id = jcenters__info.ID
+        INNER JOIN certificate__info ON classes__info.certificate_id = certificate__info.ID
+        INNER JOIN certificate__structure ON classes__info.certificate_structure_id = certificate__structure.ID
+        INNER JOIN lesson__info ON classes__info.lesson_id = lesson__info.ID
+        LEFT JOIN teachers__info ON classes__info.teacher_id = teachers__info.ID
+        WHERE classes__info.status='Active' `+
+            (jcenterId > 0 ? ` AND classes__info.jcenters_id=?` : ``);
+        query = mysql.format(statement, [jcenterId]);
+        queryRS = await module.exports.dbQuery_promise(query);
+        return queryRS;
+    },
     loadClassListForMember: async (listMood, userID) => {
-        let idList = [1, 2];
-        if (listMood === 'Active') {
-            idList = [1, 2];
-        } else if (listMood === 'Active') {
-            idList = [1, 2, 3, 6];
+        let statement, query, queryRS;
+        let needStatus = 'Active';
+        if (listMood === 'Archive') {
+            needStatus = 'Archive';
         } else if (listMood === 'Suggestion') {
-            idList = [1, 2, 3, 5];
+            needStatus = 'Suggestion';
         }
         statement = `
             SELECT 
             classes__info.*,
             classes__delivery_type.title AS delivery_title,
+            GROUP_CONCAT(classes__delivery_relation.delivery_id) AS deliveryIds,
             classes__type.title AS type_title,
             education__department.title AS department_title,
             education__group.title AS group_title,
@@ -611,10 +811,13 @@ WHERE lesson__eduGroup_relation.education_group_id = ?`;
             certificate__info.title AS certificate_title,
             certificate__structure.title AS structure_title,
             CONCAT(teachers__info.f_name , ' ' , teachers__info.l_name) AS teacher_name,
-            teachers__info.image_url AS Teacher_Picture
+            teachers__info.image_url AS Teacher_Picture,
+            classes__user_relation.status AS userRelStatus
             FROM classes__info
+            INNER JOIN classes__user_relation ON classes__user_relation.class_id = classes__info.ID
             INNER JOIN classes__type ON classes__info.type_id = classes__type.ID
             INNER JOIN classes__delivery_type ON classes__info.delivery_id = classes__delivery_type.ID
+            INNER JOIN classes__delivery_relation ON classes__info.ID = classes__delivery_relation.classe_id
             INNER JOIN education__department ON classes__info.department_id = education__department.ID
             INNER JOIN education__group ON classes__info.group_id = education__group.ID
             INNER JOIN jcenters__info ON classes__info.jcenters_id = jcenters__info.ID
@@ -622,21 +825,26 @@ WHERE lesson__eduGroup_relation.education_group_id = ?`;
             INNER JOIN certificate__structure ON classes__info.certificate_structure_id = certificate__structure.ID
             INNER JOIN lesson__info ON classes__info.lesson_id = lesson__info.ID
             LEFT JOIN teachers__info ON classes__info.teacher_id = teachers__info.ID
-            WHERE classes__info.ID IN(?)
-        `;
-        query = mysql.format(statement, [idList]);
+            WHERE classes__user_relation.user_id=? AND classes__info.status=? GROUP BY classes__info.ID`;
+        query = mysql.format(statement, [userID, needStatus]);
         queryRS = await module.exports.dbQuery_promise(query);
         return queryRS;
     },
     addClassToUserCart: async (userId, classId, price) => {
         let statement, query, queryRS;
+        statement = `SELECT ID FROM classes__user_relation WHERE status='Active' AND class_id=? AND user_id=?`;
+        query = mysql.format(statement, [classId, userId]);
+        queryRS = await module.exports.dbQuery_promise(query);
+        if (queryRS.length > 0) {
+            return -1;
+        }
         statement = `INSERT INTO user__cart(user_id, class_id, price) VALUES (?,?,?)`;
         query = mysql.format(statement, [userId, classId, price]);
         queryRS = await module.exports.dbQuery_promise(query);
         if (queryRS.insertId > 0) {
             return 1;
         } else {
-            return -1;
+            return -2;
         }
     },
     loadUserCart: async (userId) => {
@@ -661,13 +869,99 @@ WHERE lesson__eduGroup_relation.education_group_id = ?`;
         return queryRS;
     },
 
-    checkCartClassToEnrollForMoodle: async (userId) => {
+    addCenterToTeacher: async (userId, jcenterId) => {
         let statement, query, queryRS;
-        statement = `SELECT classes__info.ID,classes__info.moodle_course_id
+
+        statement = `SELECT ID FROM teachers__info WHERE teachers__info.user_id = ?`;
+        query = mysql.format(statement, [userId]);
+        queryRS = await module.exports.dbQuery_promise(query);
+
+        statement = `INSERT INTO teachers__jcenter_relation(teacher_id,center_id) VALUES (?,?)`;
+        query = mysql.format(statement, [queryRS[0]['ID'], jcenterId]);
+        queryRS = await module.exports.dbQuery_promise(query);
+        return queryRS;
+    },
+
+    checkCartClassToManageRegister: async (userId) => {
+        let statement, query, queryRS;
+        statement = `SELECT classes__info.*
                     FROM user__cart
                     INNER JOIN classes__info ON classes__info.ID = user__cart.class_id
                     WHERE user__cart.user_id = ?`;
         query = mysql.format(statement, [userId]);
+        queryRS = await module.exports.dbQuery_promise(query);
+        return queryRS;
+    },
+
+    createAdobeUser: async (userData) => {
+        const AdobeConnect = require("../utils/AdobeApi");
+        const adobeOBJ = new AdobeConnect();
+        await adobeOBJ.loginToAdobeAsAdmin();
+        let adobeRS = await adobeOBJ.createUser(userData['fname'], userData['lname'], userData['mobile'], userData['mobile'] + '@jjqc.ir');
+        if (adobeRS > 0) {
+            let statement, query, queryRS;
+            statement = `UPDATE user__info SET adobe_principle_id=? WHERE ID=?`;
+            query = mysql.format(statement, [adobeRS, userData['ID']]);
+            queryRS = await module.exports.dbQuery_promise(query);
+        }
+    },
+
+    enrollUserToOfflineClass: async (userData, classData) => {
+        const moodleOBJ = require("../utils/moodleApi");
+        if (userData['moodle_user_id'] == 0) {
+            await moodleOBJ.createUser(userData['ID'], userData['mobile'], userData['fname'], userData['lname'], userData['mobile'] + '@jjqc.ir');
+            userData = await module.exports.getUserDetail(userData['ID']);
+            userData = userData[0];
+        }
+        let moodleRS = await moodleOBJ.enrollUserInCourse(userData['moodle_user_id'], classData['moodle_course_id']);
+        let classRegisterRS = await module.exports.addUserToClass(userData['ID'], classData);
+        if (classRegisterRS.insertId > 0) {
+            await module.exports.removeFromCart(userData['ID'], classData.ID);
+        }
+    },
+    enrollUserToOnlineClass: async (userData, classData) => {
+        if (userData['adobe_principle_id'] == 0) {
+            await module.exports.createAdobeUser(userData);
+        }
+        let classRegisterRS = await module.exports.addUserToClass(userData['ID'], classData);
+        if (classRegisterRS.insertId > 0) {
+            await module.exports.removeFromCart(userData['ID'], classData.ID);
+        }
+    },
+    updateOnlineClassSessionsRecordings: async (classId, recordings) => {
+        let statement, query, classSessionRS;
+        statement = `SELECT * FROM classes__session WHERE classe_id=? AND adobe_meeting_url IS NULL `;
+        query = mysql.format(statement, [classId]);
+        classSessionRS = await module.exports.dbQuery_promise(query);
+        for (let recorded of recordings) {
+            const recordedDate = recorded['date-begin'][0].split('T')[0];
+
+            const matchedMeeting = classSessionRS.find(meeting => {
+                const databaseDate = moment.tz(meeting.date, 'Asia/Tehran').format('YYYY-MM-DD');
+                // console.log(databaseDate + '-' + recordedDate);
+                return recordedDate === databaseDate;
+            });
+
+            if (matchedMeeting) {
+                let videoURL = `https://class.jtehran.com${recorded['url-path'][0]}`;
+                statement = `UPDATE classes__session SET adobe_meeting_url=? WHERE ID=?`;
+                query = mysql.format(statement, [videoURL, matchedMeeting.ID]);
+                await module.exports.dbQuery_promise(query);
+            }
+        }
+
+    },
+    addUserToClass: async (userId, classData) => {
+        let statement, query, queryRS;
+        statement = `INSERT INTO classes__user_relation(class_id, user_id, paid_amount) VALUES (?,?,?)`;
+        query = mysql.format(statement, [classData['ID'], userId, classData['expense']]);
+        queryRS = await module.exports.dbQuery_promise(query);
+        return queryRS;
+    },
+    submitUserCancelRequest: async (userId, classId) => {
+        let statement, query, queryRS;
+        statement = `UPDATE classes__user_relation SET status='Cancel_request' WHERE user_id=? AND class_id=?`;
+        query = mysql.format(statement, [userId, classId]);
         queryRS = await module.exports.dbQuery_promise(query);
         return queryRS;
     },
