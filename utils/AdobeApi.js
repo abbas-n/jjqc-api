@@ -277,7 +277,7 @@ class AdobeApiModel {
     return `${this.domainUrl}${meetingURL}`;
   }
 
-  async getRecordingFilesِData(scoId) {
+  async getRecordingFilesData(scoId) {
     const url = `${this.apiUrl}action=sco-contents&sco-id=${scoId}`;
     const response = await this.fileGetContent(url);
     const parsedResponse = await this.parseXML(response);
@@ -291,16 +291,15 @@ class AdobeApiModel {
     for (const scoId of scoIds) {
       await this.setScoToPublic(scoId);
     }
-    return filteredData; 
+    return filteredData;
     // return scoIds; 
   }
-  
+
   async setScoToPublic(scoId) {
     const url = `${this.apiUrl}action=permissions-update&principal-id=public-access&acl-id=${scoId}&permission-id=view`;
     console.log(url);
     const response = await this.fileGetContent(url);
     const parsedResponse = await this.parseXML(response);
-    console.log('Parsed Response:', JSON.stringify(parsedResponse, null, 2));
   }
   async setScoToPrivate(scoId) {
     const url = `${this.apiUrl}action=permissions-update&principal-id=public-access&acl-id=${scoId}&permission-id=remove`;
@@ -332,6 +331,41 @@ class AdobeApiModel {
     } catch (error) {
       console.error('Error fetching recordings:', error);
       throw error;
+    }
+  }
+
+  async checkAndEndMeeting(meetingID) {
+    try {
+      // Step 1: Check meeting status using sco-info
+      const checkUrl = `${this.apiUrl}action=sco-info&sco-id=${meetingID}`;
+      const response = await this.fileGetContent(checkUrl);
+      const parsedResponse = await this.parseXML(response);
+
+      // Parse the sco-info response to check if the meeting exists and its status
+      // console.log('Parsed Response:', JSON.stringify(parsedResponse, null, 2));
+      const status = parsedResponse.results.status[0].$?.code;
+      if (status !== 'ok') {
+        console.log('Meeting does not exist or is invalid');
+        return { success: false, message: 'Meeting does not exist or is invalid' };
+      }
+      
+      // Step 2: End the meeting using meeting-end
+      const endUrl = `${this.apiUrl}action=meeting-end&meeting-id=${meetingID}`;
+      const endResponse = await this.fileGetContent(endUrl);
+      const parsedEndResponse = await this.parseXML(endResponse);
+      
+      // console.log('Parsed Response:', JSON.stringify(parsedEndResponse, null, 2));
+      const endStatus = parsedEndResponse.results.status[0].$?.code;
+      if (endStatus === 'ok') {
+        console.log('Meeting ended successfully');
+        return { success: true, message: 'Meeting ended successfully' };
+      } else {
+        console.log('Failed to end the meeting');
+        return { success: false, message: 'Failed to end the meeting' };
+      }
+    } catch (error) {
+      console.error('Error in checkAndEndMeeting:', error);
+      return { success: false, message: 'An error occurred', error: error.message };
     }
   }
 

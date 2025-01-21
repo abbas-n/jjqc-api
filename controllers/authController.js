@@ -4,6 +4,7 @@ const jwt = require("jsonwebtoken");
 const { dbCon, mysql } = require("../config/dbConnection");
 const tools = require("../utils/tools");
 const PModel = require("../models/publicModel");
+const axios = require('axios');
 
 
 function generateAccessToken(user) {
@@ -23,18 +24,18 @@ function generateRefreshToken(user) {
 const sendVerifyCode = asyncHandler(async (req, res) => {
   const mobile = req.body.mobile;
 
-  let checkIsNumber = tools.is_number(mobile);
-  let checkIsMobile = tools.is_mobile(mobile);
+  try {
 
-  if (!checkIsNumber || mobile == '' || !checkIsMobile) {
-    res.status(400);
-    throw new Error("شماره موبایل مجاز نیست");
-  }
+    let checkIsNumber = tools.is_number(mobile);
+    let checkIsMobile = tools.is_mobile(mobile);
+    if (!checkIsNumber || mobile == '' || !checkIsMobile) {
+      res.status(400);
+      throw new Error("شماره موبایل مجاز نیست");
+    }
 
-  const checkUser = "SELECT * FROM user__info WHERE mobile = ?";
-  const checkUser_query = mysql.format(checkUser, [mobile]);
-  dbCon.query(checkUser_query, async (err, result) => {
-    if (err) throw (err);
+    const checkUser = "SELECT * FROM user__info WHERE mobile = ?";
+    const checkUser_query = mysql.format(checkUser, [mobile]);
+    let result = await PModel.dbQuery_promise(checkUser_query);
     if (result.length == 0) {
       res.status(403).json({ message: "شماره همراه وارد شده دارای حساب کاربری نمیباشد" });
     } else {
@@ -49,8 +50,7 @@ const sendVerifyCode = asyncHandler(async (req, res) => {
             return;
           }
         }
-
-        const code = tools.rand_numcode(5);
+        const code = tools.rand_numcode(6);
         const sqlInsert = "INSERT INTO user__sms_code(mobile,code) VALUES (?,?)";
         const insert_query = mysql.format(sqlInsert, [mobile, code]);
 
@@ -58,8 +58,9 @@ const sendVerifyCode = asyncHandler(async (req, res) => {
         if (result.insertId <= 0) {
           res.status(500).json({ message: 'خطا در ارسال کد تایید' });
         } else {
-          var smsRS = await tools.sendSMS_ir(code, mobile);
-          if (smsRS == 200) {
+          let msg = `کد فعالسازی حساب: ` + code;
+          var smsRS = await tools.sendSMS_ir(msg, mobile);
+          if (smsRS == 1) {
             res.status(200).json({ message: 'کد با موفقیت ارسال شد' });
           } else {
             res.status(500).json({ message: 'خطا در ارسال پیامک' });
@@ -69,7 +70,9 @@ const sendVerifyCode = asyncHandler(async (req, res) => {
         res.status(500).json({ message: 'خطا در ارسال پیامک' });
       }
     }
-  });
+  } catch (error) {
+
+  }
 });
 
 
@@ -78,7 +81,7 @@ const sendVerifyCode = asyncHandler(async (req, res) => {
 //@access public
 const checkVerifyCode = asyncHandler(async (req, res) => {
   const { mobile, verifyCode } = req.body;
-
+  let statement, query, queryRS;
   let checkIsNumber = tools.is_number(mobile);
   let checkIsMobile = tools.is_mobile(mobile);
 
@@ -94,8 +97,17 @@ const checkVerifyCode = asyncHandler(async (req, res) => {
 
     if (result.length != 0) {
       if (result[0].code == verifyCode) {
-        dbCon.query("UPDATE user__sms_code set status='verify' WHERE ID=" + result[0].ID);
-        res.status(200).json({ message: '' });
+        statement = `UPDATE user__sms_code set status='verify' WHERE ID=?`;
+        query = mysql.format(statement, [result[0].ID]);
+        queryRS = await PModel.dbQuery_promise(query);
+        statement = `UPDATE user__info set status='Active' WHERE mobile=?`;
+        query = mysql.format(statement, [mobile]);
+        queryRS = await PModel.dbQuery_promise(query);
+        if (queryRS.affectedRows > 0) {
+          res.status(200).json({ message: 'حساب کاربری با موفقیت فعال شد' });
+        } else {
+          res.status(400).json({ message: 'خطا در فعالسازی حساب کاربری' });
+        }
       } else {
         res.status(400).json({ message: 'کد وارد شده معتبر نمیباشد' });
       }
@@ -114,9 +126,9 @@ const checkVerifyCode = asyncHandler(async (req, res) => {
 const registerUser = asyncHandler(async (req, res) => {
   try {
 
-    const { mobile, fname, lname, pass } = req.body;
+    const { mobile, fname, lname, pass, nationalCode } = req.body;
 
-    if (!mobile || !pass || !fname || !lname) {
+    if (!mobile || !pass || !fname || !lname, !nationalCode) {
       res.status(400);
       throw new Error("تمامی موارد فرم الزامی هستند");
     }
@@ -127,11 +139,11 @@ const registerUser = asyncHandler(async (req, res) => {
       throw new Error("شماره موبایل مجاز نیست");
     }
 
-    // checkIsNumber = tools.is_number(ncode);
-    // if (!checkIsNumber || ncode == '') {
-    //   res.status(400);
-    //   throw new Error("کد ملی مجاز نیست");
-    // }
+    checkIsNumber = tools.is_number(nationalCode);
+    if (!checkIsNumber || nationalCode == '') {
+      res.status(400);
+      throw new Error("کد ملی مجاز نیست");
+    }
 
     if (!tools.is_string(fname) || !tools.is_string(lname)) {
       res.status(400);
@@ -147,14 +159,17 @@ const registerUser = asyncHandler(async (req, res) => {
     } else {
       const uCode = await tools.generateUniqueCode('user__info', 'code', 6);
       const hashedPassword = await bcrypt.hash(pass, 10);
-      let sqlInsert = "INSERT INTO user__info(code,fname,lname,mobile,password) VALUES (?,?,?,?,?)";
-      let insert_query = mysql.format(sqlInsert, [uCode, fname, lname, mobile, hashedPassword]);
+      let sqlInsert = "INSERT INTO user__info(code,fname,lname,national_code,mobile,password,status) VALUES (?,?,?,?,?,?,?)";
+      let insert_query = mysql.format(sqlInsert, [uCode, fname, lname, nationalCode, mobile, hashedPassword, 'Not_Confirmed']);
       let queryRS = await PModel.dbQuery_promise(insert_query);
       if (queryRS.insertId > 0) {
         sqlInsert = "INSERT INTO user__them_setting(user_id) VALUES (?)";
         insert_query = mysql.format(sqlInsert, [queryRS.insertId]);
         await PModel.dbQuery_promise(insert_query);
-        res.status(200).json({ message: 'کاربر با موفقیت ایجاد شد' });
+        await axios.post('https://api.jjqc.ir/api/v1/auth/sendVerifyCode', {
+          mobile: mobile
+        });
+        res.status(200).json({ message: 'کاربر با موفقیت ثبت شد' });
       } else {
         res.status(400).json({ message: 'خطا در ثبت کاربر' });
       }
@@ -183,50 +198,48 @@ const loginUser = asyncHandler(async (req, res) => {
       mobile = '09201250456'
     }
 
-    const sqlSearch = `Select user__info.*,user__them_setting.active_mode,user__them_setting.active_theme 
+    const sqlSearch = `SELECT user__info.*,user__them_setting.active_mode,user__them_setting.active_theme 
     FROM user__info 
     INNER JOIN user__them_setting ON user__them_setting.user_id = user__info.ID
-    WHERE mobile = ?`;
+    WHERE user__info.status='Active' AND mobile = ?`;
     const search_query = mysql.format(sqlSearch, [mobile])
-    await dbCon.query(search_query, async (err, user) => {
-      if (err) throw (err)
-      if (user.length == 0) {
-        res.status(404).json({ message: 'کاربر با این مشخصات یافت نشد' });
-      }
-      else {
-        const hashedPassword = user[0].password
-        if (await bcrypt.compare(password, hashedPassword)) {
-          const userDataForToken = {
-            user: {
-              username: user[0].fname + ' ' + user[0].lname,
-              ID: user[0].ID,
-              lightMode: user[0].active_mode,
-              activeTheme: user[0].active_theme,
-            }
+    let user = await PModel.dbQuery_promise(search_query);
+    if (user.length == 0) {
+      res.status(404).json({ message: 'کاربر با این مشخصات یافت نشد' });
+    }
+    else {
+      const hashedPassword = user[0].password
+      if (await bcrypt.compare(password, hashedPassword)) {
+        const userDataForToken = {
+          user: {
+            username: user[0].fname + ' ' + user[0].lname,
+            ID: user[0].ID,
+            lightMode: user[0].active_mode,
+            activeTheme: user[0].active_theme,
           }
-          const accessToken = generateAccessToken(userDataForToken);
-          const refreshToken = generateRefreshToken(userDataForToken);
-          const sqlDel = "DELETE FROM user__refresh_token WHERE user_id=?";
-          const del_query = mysql.format(sqlDel, [user[0].ID]);
-          dbCon.query(del_query, async (err, result) => {
-            const sqlInsert = "INSERT INTO user__refresh_token (user_id,token) VALUES (?,?)";
-            const insert_query = mysql.format(sqlInsert, [user[0].ID, refreshToken]);
-            dbCon.query(insert_query, (err, result) => { });
-            res.cookie('RToken', refreshToken, { httpOnly: true, secure: true, sameSite: "none" });
-            const needUserData = userDataForToken.user;
+        }
+        const accessToken = generateAccessToken(userDataForToken);
+        const refreshToken = generateRefreshToken(userDataForToken);
 
+        const sqlDel = "DELETE FROM user__refresh_token WHERE user_id=?";
+        const del_query = mysql.format(sqlDel, [user[0].ID]);
+        await PModel.dbQuery_promise(del_query);
 
-            const sqllogInsert = "INSERT INTO `user__last_login`(`user_id`) VALUES (?)";
-            const insertLogQuery = mysql.format(sqllogInsert, [user[0].ID]);
-            dbCon.query(insertLogQuery, (err, result) => { });
+        const sqlInsert = "INSERT INTO user__refresh_token (user_id,token) VALUES (?,?)";
+        const insert_query = mysql.format(sqlInsert, [user[0].ID, refreshToken]);
+        await PModel.dbQuery_promise(insert_query);
+        res.cookie('RToken', refreshToken, { httpOnly: true, secure: true, sameSite: "none" });
 
-            res.status(200).json({ accessToken, needUserData });
-          });
-        } else {
-          res.status(400).json({ message: 'نام کاربری یا رمز عبور اشتباه است' })
-        } //end of bcrypt.compare()
-      }//end of User exists i.e. results.length==0
-    })
+        const needUserData = userDataForToken.user;
+        const sqllogInsert = "INSERT INTO `user__last_login`(`user_id`) VALUES (?)";
+        const insertLogQuery = mysql.format(sqllogInsert, [user[0].ID]);
+        await PModel.dbQuery_promise(insertLogQuery);
+
+        res.status(200).json({ accessToken, needUserData });
+      } else {
+        res.status(400).json({ message: 'نام کاربری یا رمز عبور اشتباه است' })
+      }
+    }
   } catch (err) {
     console.log(err)
     res.status(404).json({ message: 'خطا در ورود به سیستم' });

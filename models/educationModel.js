@@ -377,7 +377,7 @@ INNER JOIN lesson__eduGroup_relation ON
 lesson__eduGroup_relation.lesson_id = lesson__info.ID
 WHERE lesson__eduGroup_relation.education_group_id = ?`;
         query = mysql.format(statement, [groupId]);
-        queryRS = await module.exports.dbQuery_promise(query);
+        queryRS = await module.exports.dbQuery_promise(query); 
         return queryRS;
     },
     loadCertificateInfo: async () => {
@@ -704,15 +704,14 @@ WHERE lesson__eduGroup_relation.education_group_id = ?`;
     },
     getTeacherClass: async (classType, userID) => {
         let statement, query, queryRS;
-        statement = `
-SELECT 
-classes__info.*
-FROM classes__info
-INNER JOIN classes__teacher_relation ON classes__teacher_relation.classe_id = classes__info.ID
-INNER JOIN teachers__info ON teachers__info.ID = classes__teacher_relation.teacher_id
-WHERE 
-classes__info.status IN (`+ (classType === 'Active' ? '"Active"' : '"Archive"') + `) AND 
-teachers__info.user_id =?`;
+        statement = `SELECT classes__info.*,
+            GROUP_CONCAT(classes__delivery_relation.delivery_id) AS deliveryIds
+            FROM classes__info
+            INNER JOIN classes__teacher_relation ON classes__teacher_relation.classe_id = classes__info.ID
+            INNER JOIN teachers__info ON teachers__info.ID = classes__teacher_relation.teacher_id
+            INNER JOIN classes__delivery_relation ON classes__info.ID = classes__delivery_relation.classe_id
+            WHERE classes__info.status IN (`+ (classType === 'Active' ? '"Active"' : '"Archive"') + `) AND 
+            teachers__info.user_id =?`;
         query = mysql.format(statement, [userID]);
         queryRS = await module.exports.dbQuery_promise(query);
         return queryRS;

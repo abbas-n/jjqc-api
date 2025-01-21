@@ -1,7 +1,8 @@
 const request = require('request');
 const { dbCon, mysql } = require("../config/dbConnection");
+const { urlencoded } = require('express');
 const dotenv = require("dotenv").config();
-
+const axios = require('axios');
 module.exports = {
     is_number: (input) => {
         if (input === '')
@@ -84,7 +85,7 @@ module.exports = {
         }
     },
 
-    nowTimeDif_min: (time) => {
+    nowTimeDif_min: async (time) => {
         const currentTime = new Date().getTime();
         var difference = currentTime - time;
         return Math.floor(difference / 1000 / 60);
@@ -173,26 +174,40 @@ module.exports = {
         // return rs;
 
 
-        var Kavenegar = require('kavenegar');
-        var api = Kavenegar.KavenegarApi({
-            apikey: '694B79636B51794A4E724C56796F7A2F5A383455796265516E5941535446697A'
-        });
-        var statusRS = 0;
+        // var Kavenegar = require('kavenegar');
+        // var api = Kavenegar.KavenegarApi({
+        //     apikey: '694B79636B51794A4E724C56796F7A2F5A383455796265516E5941535446697A'
+        // });
+        // var statusRS = 0;
 
 
-        let rs = await new Promise((resolve, reject) => {
-            api.VerifyLookup({
-                receptor: mobiles,
-                token: msg,
-                template: "hrmbai"
-            }, function (response, status) {
-                // console.log(response);
-                // console.log(status);
-                if (0) reject(err);
-                else resolve(status);
-            });
-        });
-        return rs;
+        // let rs = await new Promise((resolve, reject) => {
+        //     api.VerifyLookup({
+        //         receptor: mobiles,
+        //         token: msg,
+        //         template: "hrmbai"
+        //     }, function (response, status) {
+        //         // console.log(response);
+        //         // console.log(status);
+        //         if (0) reject(err);
+        //         else resolve(status);
+        //     });
+        // });
+        // return rs;
+
+        let needUrl = `${process.env.candoosmsURL}username=${process.env.candoosmsUser}&password=${process.env.candoosmsPass}&command=send&src=200002184650&destinations=${mobiles}&body=${msg}&flash=0`;
+        try {
+            const response = await axios.get(needUrl);
+            const match = response.data.match(/ID:(\d+)/);
+            if (match && match[1] > 0) {
+                return 1;
+            } else {
+                return 0;
+            }
+        } catch (error) {
+            console.error(error);
+            throw new Error('Error occurred during the request');
+        }
     },
 }
 

@@ -388,9 +388,9 @@ const getLessonTeacherData = asyncHandler(async (req, res) => {
 const handleEnterMoodle = asyncHandler(async (req, res) => {
   try {
     const userID = req.user.ID;
-    const { classId } = req.body; 
+    const { classId } = req.body;
     let userData = await educationModel.getUserDetail(userID);
-    let moodUrl = await moodleOBJ.manageUserLoginRedirect(userData[0]['mobile'],userData[0]['mobile']); 
+    let moodUrl = await moodleOBJ.manageUserLoginRedirect(userData[0]['mobile'], userData[0]['mobile']);
     res.status(200).json({ moodUrl: moodUrl });
   } catch (err) {
     console.log(err);
@@ -433,6 +433,9 @@ const handleEnterOnlineClass = asyncHandler(async (req, res) => {
     }
     let meetingURL = '';
     if (userPermission !== 5) {
+      if (userPermission === 8) {
+        await adobeOBJ.checkAndEndMeeting(classData[0]['adobe_meeting_sco']);
+      }
       await adobeOBJ.addTeacherToMeeting(userData[0]['adobe_principle_id'], classData[0]['adobe_meeting_sco']);
       meetingURL = await adobeOBJ.loginToMeetingAsHost(userData[0]['mobile'], userData[0]['mobile'], classData[0]['adobe_meeting_url']);
     } else {
@@ -455,7 +458,6 @@ const getMeetingRecordings = asyncHandler(async (req, res) => {
   try {
     const userID = req.user.ID;
     const { classId } = req.body;
-    let userData = await educationModel.getUserDetail(userID);
     let statement, query, classSessionRS;
     statement = `SELECT * FROM classes__session WHERE classe_id=? AND adobe_meeting_url IS NULL `;
     query = mysql.format(statement, [classId]);
@@ -463,7 +465,7 @@ const getMeetingRecordings = asyncHandler(async (req, res) => {
     if (classSessionRS.length > 0) {
       let classData = await educationModel.getClassData(classId);
       await adobeOBJ.loginToAdobeAsAdmin();
-      let meetingRecordings = await adobeOBJ.getRecordingFilesِData(classData[0]['adobe_meeting_sco']);
+      let meetingRecordings = await adobeOBJ.getRecordingFilesData(classData[0]['adobe_meeting_sco']);
       await educationModel.updateOnlineClassSessionsRecordings(classId, meetingRecordings);
       res.status(200).json({ meetingRecordings });
     } else {
