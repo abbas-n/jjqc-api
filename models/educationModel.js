@@ -377,7 +377,7 @@ INNER JOIN lesson__eduGroup_relation ON
 lesson__eduGroup_relation.lesson_id = lesson__info.ID
 WHERE lesson__eduGroup_relation.education_group_id = ?`;
         query = mysql.format(statement, [groupId]);
-        queryRS = await module.exports.dbQuery_promise(query); 
+        queryRS = await module.exports.dbQuery_promise(query);
         return queryRS;
     },
     loadCertificateInfo: async () => {
@@ -442,6 +442,14 @@ WHERE lesson__eduGroup_relation.education_group_id = ?`;
         query = mysql.format(statement, [userID]);
         queryRS = await module.exports.dbQuery_promise(query);
         return queryRS[0]['ID'];
+    },
+
+    loadJcenterInfoByUser: async (userID) => {
+        let statement, query, queryRS;
+        statement = `SELECT * FROM jcenters__info WHERE user_id=?`;
+        query = mysql.format(statement, [userID]);
+        queryRS = await module.exports.dbQuery_promise(query);
+        return queryRS;
     },
 
     getTeacherLessonRelationData: async (teacherId) => {
@@ -555,7 +563,7 @@ WHERE lesson__eduGroup_relation.education_group_id = ?`;
         LEFT JOIN certificate__info ON classes__info.certificate_id = certificate__info.ID
         LEFT JOIN certificate__structure ON classes__info.certificate_structure_id = certificate__structure.ID
         INNER JOIN lesson__info ON classes__info.lesson_id = lesson__info.ID` +
-            (jcenterId > 0 ? ` WHERE classes__info.jcenters_id=?` : ``) + ` GROUP BY classes__info.ID`;
+            (jcenterId > 0 ? ` WHERE classes__info.jcenters_id=?` : ` WHERE classes__info.creator_user_id=?`) + ` GROUP BY classes__info.ID`;
 
         let query = mysql.format(statement, [jcenterId]);
         queryRS = await module.exports.dbQuery_promise(query);
@@ -624,12 +632,18 @@ WHERE lesson__eduGroup_relation.education_group_id = ?`;
         let statement, query, queryRS, userRs;
         if (queryBody.ID) {
             statement = `UPDATE classes__info SET jcenters_id=?,department_id=?, group_id=?, lesson_id=?, type_id=?, delivery_id=?, title=?, description=?, headlines=?, expense=?, cancellation_penalty=?, capacity=?, approved_time=?, class_sessions_number=?, absent_allow=?, gender=?, image_url=?, image_alt_text=?, start_date=?, end_date=?, end_register_date=?, end_date_time=?, end_cancel_date=?, end_cancel_time=?,status=?,certificate_id=?,certificate_structure_id=?,department_signature_need=?,absence_conditions=?,debt_free_condition=?,average_condition=?,obtaining_condition=?,end_class_condition=?,delivery_possibility=?,delivery_price=?,physical_certificate_fee=?,editor_user_id=?,event_type=? WHERE ID=?`;
+            query = mysql.format(statement, [queryBody.jcenters_id, queryBody.department_id, queryBody.group_id, queryBody.lesson_id, queryBody.type_id, queryBody.delivery_id, queryBody.title, queryBody.description, queryBody.headlines, queryBody.expense, queryBody.cancellation_penalty, queryBody.capacity, queryBody.approved_time, queryBody.class_sessions_number, queryBody.absent_allow, queryBody.gender, queryBody.image_url, queryBody.image_alt_text, queryBody.start_date, queryBody.end_date, queryBody.end_register_date, queryBody.end_date_time, queryBody.end_cancel_date, queryBody.end_cancel_time, queryBody.status, queryBody.certificate_id, queryBody.certificate_structure_id, queryBody.department_signature_need, queryBody.absence_conditions, queryBody.debt_free_condition, queryBody.average_condition, queryBody.obtaining_condition, queryBody.end_class_condition, queryBody.delivery_possibility, queryBody.delivery_price, queryBody.physical_certificate_fee, userID, queryBody.event_type, queryBody.ID]);
+            queryRS = await module.exports.dbQuery_promise(query);
         } else {
-            statement = `INSERT INTO classes__info(jcenters_id,department_id, group_id, lesson_id, type_id, delivery_id, title, description, headlines, expense, cancellation_penalty, capacity, approved_time, class_sessions_number, absent_allow, gender, image_url, image_alt_text, start_date, end_date, end_register_date, end_date_time, end_cancel_date, end_cancel_time,status,certificate_id,certificate_structure_id,department_signature_need,absence_conditions,debt_free_condition,average_condition,obtaining_condition,end_class_condition,delivery_possibility,delivery_price,physical_certificate_fee,creator_user_id,event_type) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`;
-        }
+            const moment = require('moment-jalaali');
+            const now = moment().format('jYYjMM');
+            const randomFourDigits = Math.floor(1000 + Math.random() * 9000);
+            const classCode = `${now}${randomFourDigits}`;
 
-        query = mysql.format(statement, [queryBody.jcenters_id, queryBody.department_id, queryBody.group_id, queryBody.lesson_id, queryBody.type_id, queryBody.delivery_id, queryBody.title, queryBody.description, queryBody.headlines, queryBody.expense, queryBody.cancellation_penalty, queryBody.capacity, queryBody.approved_time, queryBody.class_sessions_number, queryBody.absent_allow, queryBody.gender, queryBody.image_url, queryBody.image_alt_text, queryBody.start_date, queryBody.end_date, queryBody.end_register_date, queryBody.end_date_time, queryBody.end_cancel_date, queryBody.end_cancel_time, queryBody.status, queryBody.certificate_id, queryBody.certificate_structure_id, queryBody.department_signature_need, queryBody.absence_conditions, queryBody.debt_free_condition, queryBody.average_condition, queryBody.obtaining_condition, queryBody.end_class_condition, queryBody.delivery_possibility, queryBody.delivery_price, queryBody.physical_certificate_fee , userID,queryBody.event_type, queryBody.ID]);
-        queryRS = await module.exports.dbQuery_promise(query);
+            statement = `INSERT INTO classes__info(jcenters_id , code,department_id, group_id, lesson_id, type_id, delivery_id, title, description, headlines, expense, cancellation_penalty, capacity, approved_time, class_sessions_number, absent_allow, gender, image_url, image_alt_text, start_date, end_date, end_register_date, end_date_time, end_cancel_date, end_cancel_time,status,certificate_id,certificate_structure_id,department_signature_need,absence_conditions,debt_free_condition,average_condition,obtaining_condition,end_class_condition,delivery_possibility,delivery_price,physical_certificate_fee,creator_user_id,event_type) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`;
+            query = mysql.format(statement, [queryBody.jcenters_id, classCode, queryBody.department_id, queryBody.group_id, queryBody.lesson_id, queryBody.type_id, queryBody.delivery_id, queryBody.title, queryBody.description, queryBody.headlines, queryBody.expense, queryBody.cancellation_penalty, queryBody.capacity, queryBody.approved_time, queryBody.class_sessions_number, queryBody.absent_allow, queryBody.gender, queryBody.image_url, queryBody.image_alt_text, queryBody.start_date, queryBody.end_date, queryBody.end_register_date, queryBody.end_date_time, queryBody.end_cancel_date, queryBody.end_cancel_time, queryBody.status, queryBody.certificate_id, queryBody.certificate_structure_id, queryBody.department_signature_need, queryBody.absence_conditions, queryBody.debt_free_condition, queryBody.average_condition, queryBody.obtaining_condition, queryBody.end_class_condition, queryBody.delivery_possibility, queryBody.delivery_price, queryBody.physical_certificate_fee, userID, queryBody.event_type]);
+            queryRS = await module.exports.dbQuery_promise(query);
+        }
 
         let classId = -1;
         if (queryBody.ID) {
@@ -759,8 +773,12 @@ teachers__info.user_id =?`;
         queryRS = await module.exports.dbQuery_promise(query);
         return queryRS;
     },
-    getActiveClasses: async (jcenterId) => {
+    getActiveClasses: async (jcenterId, userID) => {
         let statement, query, queryRS;
+        statement = `SELECT ID  FROM jcenters__info  WHERE ID IN (SELECT jcenter_id FROM user__info WHERE ID=?) OR parent_id IN (SELECT jcenter_id FROM user__info WHERE ID=?)`;
+        queryRS = await module.exports.dbQuery_promise(mysql.format(statement, [userID, userID]));
+        let allowCenter = [0].concat(queryRS.map(row => row.ID));
+
         statement = `SELECT 
         classes__info.*,
         classes__delivery_type.title AS delivery_title,
@@ -784,9 +802,11 @@ teachers__info.user_id =?`;
         INNER JOIN lesson__info ON classes__info.lesson_id = lesson__info.ID
         LEFT JOIN teachers__info ON classes__info.teacher_id = teachers__info.ID
         WHERE classes__info.status='Active' `+
-            (jcenterId > 0 ? ` AND classes__info.jcenters_id=?` : ``);
+            (jcenterId > 0 ? ` AND classes__info.jcenters_id=?` : ` AND (classes__info.jcenters_id IN (` + allowCenter.join(',') + `) OR classes__info.delivery_id IN(2,3,4))`);
         query = mysql.format(statement, [jcenterId]);
         queryRS = await module.exports.dbQuery_promise(query);
+
+
         return queryRS;
     },
     loadClassListForMember: async (listMood, userID) => {
@@ -881,6 +901,30 @@ teachers__info.user_id =?`;
         return queryRS;
     },
 
+    serachTeacherByNationalCode: async (teacherNationalCode) => {
+        let statement, query, queryRS;
+
+        statement = `SELECT ID FROM teachers__info WHERE national_code = ?`;
+        query = mysql.format(statement, [teacherNationalCode]);
+        queryRS = await module.exports.dbQuery_promise(query);
+        if (queryRS.length > 0) {
+            return queryRS;
+        } else {
+            return -1;
+        }
+    },
+    submitAddTeacherRequest: async (foundTeacherId, jcenterId) => {
+        let statement, query, queryRS;
+        statement = `INSERT INTO jcenters__teacher_add_request(jcenters_id, teacher_id) VALUES (?,?)`;
+        query = mysql.format(statement, [foundTeacherId, jcenterId]);
+        queryRS = await module.exports.dbQuery_promise(query);
+        if (queryRS.length > 0) {
+            return queryRS;
+        } else {
+            return -1;
+        }
+    },
+
     checkCartClassToManageRegister: async (userId) => {
         let statement, query, queryRS;
         statement = `SELECT classes__info.*
@@ -955,6 +999,13 @@ teachers__info.user_id =?`;
         statement = `INSERT INTO classes__user_relation(class_id, user_id, paid_amount) VALUES (?,?,?)`;
         query = mysql.format(statement, [classData['ID'], userId, classData['expense']]);
         queryRS = await module.exports.dbQuery_promise(query);
+
+        if (queryRS.insertId > 0) {
+            statement = `UPDATE classes__info SET registration_number=registration_number+1 WHERE ID=?`;
+            query = mysql.format(statement, [classData['ID']]);
+            queryRS = await module.exports.dbQuery_promise(query);
+        }
+
         return queryRS;
     },
     submitUserCancelRequest: async (userId, classId) => {

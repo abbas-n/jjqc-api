@@ -58,7 +58,7 @@ const sendVerifyCode = asyncHandler(async (req, res) => {
         if (result.insertId <= 0) {
           res.status(500).json({ message: 'خطا در ارسال کد تایید' });
         } else {
-          let msg = `کد فعالسازی حساب: ` + code;
+          const msg = "سامانه جهاد دانشگاهی " + "\n" + "کد تایید:" + code;
           var smsRS = await tools.sendSMS_ir(msg, mobile);
           if (smsRS == 1) {
             res.status(200).json({ message: 'کد با موفقیت ارسال شد' });

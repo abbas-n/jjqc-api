@@ -178,7 +178,6 @@ module.exports = {
         } else {
             statement = `INSERT INTO user__events_calendar (user_id, events) VALUES(?,?)`;
             query = mysql.format(statement, [userId, JSON.stringify(events)]);
-            console.log(query);
             queryRS = await module.exports.dbQuery_promise(query);
         }
     },
@@ -241,12 +240,18 @@ module.exports = {
             const uCode = await tools.generateUniqueCode('user__info', 'code', 6);
             const hashedPassword = await bcrypt.hash(uCode, 10);
             statement = "INSERT INTO user__info(code,fname,lname,mobile,password,permission,jcenter_id) VALUES (?,?,?,?,?,?,?)";
-            query = mysql.format(statement, [uCode, jcenterData[0]['title'], '', uCode, hashedPassword, 6, jcenterData[0]['parent_id']]);
+            // query = mysql.format(statement, [uCode, jcenterData[0]['title'], '', uCode, hashedPassword, 6, jcenterData[0]['parent_id']]);
+            query = mysql.format(statement, [uCode, jcenterData[0]['title'], '', uCode, hashedPassword, 6, jcenterId]);
             queryRS = await module.exports.dbQuery_promise(query);
             if (queryRS.insertId > 0) {
                 statement = "INSERT INTO user__them_setting(user_id) VALUES (?)";
                 query = mysql.format(statement, [queryRS.insertId]);
                 queryRS = await module.exports.dbQuery_promise(query);
+
+                // statement = "UPDATE `jcenters__info` SET `user_id`= ? WHERE `ID`=?";
+                // query = mysql.format(statement, [queryRS.insertId , jcenterId]);
+                // queryRS = await module.exports.dbQuery_promise(query);
+
                 return 1;
             } else {
                 return -1;
@@ -343,7 +348,7 @@ module.exports = {
         let cityData = await module.exports.getCityData(jcenterData.city_id);
         if (jcenterData.ID) {
             statement = `UPDATE jcenters__info SET title=?,state_id=?,city_id=?,phone=?,fax=?,email=?,web_site=?,address=?,description=?,work_hour=?,show_mainPage_status=?,status=?,logo=?,signature_image=? WHERE ID=?`;
-            query = mysql.format(statement, [jcenterData.title, cityData[0]['parent'], jcenterData.city_id, jcenterData.phone, jcenterData.fax, jcenterData.email, jcenterData.web_site, jcenterData.address, jcenterData.description, jcenterData.work_hour, jcenterData.show_mainPage_status, jcenterData.status , jcenterData.logo , jcenterData.signature_image, jcenterData.ID]);
+            query = mysql.format(statement, [jcenterData.title, cityData[0]['parent'], jcenterData.city_id, jcenterData.phone, jcenterData.fax, jcenterData.email, jcenterData.web_site, jcenterData.address, jcenterData.description, jcenterData.work_hour, jcenterData.show_mainPage_status, jcenterData.status, jcenterData.logo, jcenterData.signature_image, jcenterData.ID]);
             queryRS = await module.exports.dbQuery_promise(query);
             statement = `UPDATE jcenters__details SET telegram=?,instagram=?,aparat=?,title_in_certificate=?,signature_holder_name=?,signature_position=?,center_indicator_code=? WHERE jcenter_id=?`;
             query = mysql.format(statement, [jcenterData.telegram, jcenterData.instagram, jcenterData.aparat, jcenterData.title_in_certificate, jcenterData.signature_holder_name, jcenterData.signature_position, jcenterData.center_indicator_code, jcenterData.ID]);
@@ -355,7 +360,7 @@ module.exports = {
             }
         } else {
             statement = `INSERT INTO  jcenters__info (title,center_mood,state_id,city_id,phone,fax,email,web_site,address,description,work_hour,show_mainPage_status,logo,signature_image) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)`;
-            query = mysql.format(statement, [jcenterData.title, 'main_center', cityData[0]['parent'], jcenterData.city_id, jcenterData.phone, jcenterData.fax, jcenterData.email, jcenterData.web_site, jcenterData.address, jcenterData.description, jcenterData.work_hour, jcenterData.show_mainPage_status , jcenterData.logo , jcenterData.signature_image]);
+            query = mysql.format(statement, [jcenterData.title, 'main_center', cityData[0]['parent'], jcenterData.city_id, jcenterData.phone, jcenterData.fax, jcenterData.email, jcenterData.web_site, jcenterData.address, jcenterData.description, jcenterData.work_hour, jcenterData.show_mainPage_status, jcenterData.logo, jcenterData.signature_image]);
             queryRS = await module.exports.dbQuery_promise(query);
             statement = `INSERT INTO  jcenters__details (jcenter_id,telegram,instagram,aparat,title_in_certificate,signature_holder_name,signature_position,center_indicator_code) VALUES(?,?,?,?,?,?,?,?)`;
             query = mysql.format(statement, [queryRS.insertId, jcenterData.telegram, jcenterData.instagram, jcenterData.aparat, jcenterData.title_in_certificate, jcenterData.signature_holder_name, jcenterData.signature_position, jcenterData.center_indicator_code]);
@@ -409,6 +414,13 @@ module.exports = {
         } else {
             return -1;
         }
+    },
+    getJCenterOperatorList: async (jcenterId) => {
+        let statement, query, queryRS;
+        statement = `SELECT * FROM user__info WHERE permission=7 AND jcenter_id=?`;
+        query = mysql.format(statement, [jcenterId]);
+        queryRS = await module.exports.dbQuery_promise(query);
+        return queryRS;
     },
     getClassHoldTimeData: async (classId) => {
         let statement, query, queryRS;
@@ -494,7 +506,6 @@ WHERE classes__session.classe_id = ?`;
         holdTimeData.start_time = module.exports.formatDateTime(holdTimeData.start_time, 'Time');
         holdTimeData.end_time = module.exports.formatDateTime(holdTimeData.end_time, 'Time');
         query = mysql.format(statement, [classId, holdTimeData.building_id, holdTimeData.room_id, holdTimeData.day_id, holdTimeData.start_time, holdTimeData.end_time]);
-        console.log(query);
         queryRS = await module.exports.dbQuery_promise(query);
         if (queryRS.insertId > 0) {
             return queryRS.insertId;
@@ -572,7 +583,6 @@ WHERE classes__session.classe_id = ?`;
             dayId: row['day_id'],
             holdTimeId: row['ID'],
         }));
-        console.log(holdTimes);
         // محاسبه تاریخ جلسات
         const currentDate = new Date();
         const result = [];
@@ -585,7 +595,6 @@ WHERE classes__session.classe_id = ?`;
 
         // انتقال تعداد مشخصی از عناصر از ابتدا به انتهای آرایه
         holdTimes = [...holdTimes.slice(smallerDays), ...holdTimes.slice(0, smallerDays)];
-        console.log(holdTimes);
 
         for (let i = 0; i < sessionNum; i++) {
             const { dayId, holdTimeId } = holdTimes[i % sessionsPerWeek];
@@ -596,8 +605,6 @@ WHERE classes__session.classe_id = ?`;
             // محاسبه تاریخ جلسه
             const diff = (dayId - (targetDate.getDay() + 1) + 7) % 7;
             targetDate.setDate(targetDate.getDate() + diff + (weekOffset * 7));
-            console.log(i + ' : ' + weekOffset + ' -- ' + (targetDate.getDay() + 1) + ' --- ' + dayId + '---' + diff + '---' + targetDate)
-            console.log('----------------------------');
 
             result.push({
                 title: `جلسه شماره ${i + 1}`,
@@ -644,11 +651,76 @@ WHERE classes__session.classe_id = ?`;
         return queryRS;
     },
 
+    getClassCancelationUserList: async (calssId) => {
+        let statement, query, queryRS;
+        statement = `SELECT 
+        classes__user_relation.ID,
+CONCAT(user__info.fname , ' ' , user__info.lname) AS user_full_name,
+classes__user_relation.insert_time,
+classes__user_relation.status AS RStatus
+FROM classes__user_relation
+INNER JOIN user__info ON classes__user_relation.user_id = user__info.ID
+WHERE
+classes__user_relation.class_id = ? AND 
+classes__user_relation.status = 'Cancel_request'`;
+        query = mysql.format(statement, [calssId]);
+
+        queryRS = await module.exports.dbQuery_promise(query);
+        return queryRS;
+    },
+
+    acceptCancelRequest: async (requestId, jcenterId, userID) => {
+        let statement, query, queryRS;
+        statement = `UPDATE classes__user_relation SET status="Canceled" WHERE ID=?`;
+        query = mysql.format(statement, [requestId]);
+        queryRS = await module.exports.dbQuery_promise(query);
+
+        queryRS = await module.exports.dbQuery_promise('SELECT * FROM classes__user_relation WHERE ID=' + requestId);
+
+        statement = `INSERT INTO user__payback_need(user_id, jcenters_id, class_id, pay_amount) VALUES (?,?,?,?)`;
+        query = mysql.format(statement, [queryRS[0]['user_id'], jcenterId, queryRS[0]['class_id'], queryRS[0]['paid_amount']]);
+        console.log(query);
+        queryRS = await module.exports.dbQuery_promise(query);
+
+        if (queryRS.affectedRows > 0) {
+            return queryRS.affectedRows;
+        } else {
+            return -1;
+        }
+    },
+    getPayBackData: async (jcenterId) => {
+        let statement, query, queryRS;
+        statement = `SELECT 
+user__payback_need.*,
+CONCAT(user__info.fname , ' ' , user__info.lname) AS user_full_name,
+classes__info.title AS classTilte
+FROM 
+user__payback_need
+INNER JOIN user__info ON user__payback_need.user_id = user__info.ID
+INNER JOIN classes__info ON user__payback_need.class_id = classes__info.ID
+WHERE
+user__payback_need.jcenters_id=?`;
+        query = mysql.format(statement, [jcenterId]);
+        queryRS = await module.exports.dbQuery_promise(query);
+
+        
+        return queryRS;
+    },
+    acceptPayBack: async (requestId) => {
+        let statement, query, queryRS;
+        statement = `UPDATE user__payback_need SET status="Done" WHERE ID=?`;
+        query = mysql.format(statement, [requestId]);
+        queryRS = await module.exports.dbQuery_promise(query);
+        if (queryRS.affectedRows > 0) {
+            return queryRS.affectedRows;
+        } else {
+            return -1;
+        }
+    },
     changeUserSessionStatus: async (userSessionId, targetStatus) => {
         let statement, query, queryRS;
         statement = `UPDATE classes__user_session_relation SET status=? WHERE ID=?`;
         query = mysql.format(statement, [targetStatus, userSessionId]);
-        console.log(query)
         queryRS = await module.exports.dbQuery_promise(query);
         if (queryRS.affectedRows > 0) {
             return queryRS.affectedRows;
@@ -720,6 +792,29 @@ WHERE classes__session.classe_id = ?`;
             statement = `INSERT INTO  jcenters__buildings (center_id,title,phone,fax,address) VALUES(?,?,?,?,?)`;
             query = mysql.format(statement,
                 [jcenterId, jbuildingData.title, jbuildingData.phone, jbuildingData.fax, jbuildingData.address]);
+            queryRS = await module.exports.dbQuery_promise(query);
+            if (queryRS.insertId > 0) {
+                return queryRS.insertId;
+            } else {
+                return -1;
+            }
+        }
+    },
+    submitOperator: async (operatorData, jcenterId) => {
+        let statement, query, queryRS;
+        if (operatorData.ID) {
+            statement = `UPDATE user__info SET fname=?,lname=?,national_code=?,mobile=? WHERE ID=?`;
+            query = mysql.format(statement, [operatorData.fname, operatorData.lname, operatorData.national_code, operatorData.mobile, operatorData.ID]);
+            queryRS = await module.exports.dbQuery_promise(query);
+            if (queryRS.affectedRows > 0) {
+                return queryRS.affectedRows;
+            } else {
+                return -1;
+            }
+        } else {
+            statement = `INSERT INTO user__info(fname, lname, national_code, mobile, password, permission, jcenter_id) VALUES (?,?,?,?,?,?,?)`;
+            let password = hashedPassword = await bcrypt.hash(operatorData.national_code, 10);
+            query = mysql.format(statement, [operatorData.fname, operatorData.lname, operatorData.national_code, operatorData.mobile, password, 7, jcenterId]);
             queryRS = await module.exports.dbQuery_promise(query);
             if (queryRS.insertId > 0) {
                 return queryRS.insertId;
@@ -804,6 +899,17 @@ WHERE classes__session.classe_id = ?`;
         let statement, query, queryRS;
         statement = `DELETE FROM jexam__centers WHERE ID=?`;
         query = mysql.format(statement, [examcenterId]);
+        queryRS = await module.exports.dbQuery_promise(query);
+        if (queryRS.affectedRows > 0) {
+            return queryRS.affectedRows;
+        } else {
+            return -1;
+        }
+    },
+    deleteOperator: async (operatorId) => {
+        let statement, query, queryRS;
+        statement = `DELETE FROM user__info WHERE ID=?`;
+        query = mysql.format(statement, [operatorId]);
         queryRS = await module.exports.dbQuery_promise(query);
         if (queryRS.affectedRows > 0) {
             return queryRS.affectedRows;
@@ -1132,7 +1238,7 @@ WHERE classes__session.classe_id = ?`;
         query = mysql.format(statement, [userID]);
         queryRS = await module.exports.dbQuery_promise(query);
 
-        if(parseInt(queryRS[0]['permission'])===8){
+        if (parseInt(queryRS[0]['permission']) === 8) {
             statement = `SELECT 
 0 AS DOYP,
 DAYOFYEAR(classes__session.date) AS DOY,
@@ -1143,8 +1249,8 @@ INNER JOIN classes__teacher_relation ON classes__session.classe_id = classes__te
 INNER JOIN teachers__info ON classes__teacher_relation.teacher_id = teachers__info.ID
 INNER JOIN classes__info ON classes__session.classe_id = classes__info.ID
 WHERE teachers__info.user_id = ?`;
-        }else{
-        statement = `SELECT 
+        } else {
+            statement = `SELECT 
 0 AS DOYP,
 DAYOFYEAR(classes__session.date) AS DOY,
 classes__session.date,
@@ -1156,10 +1262,10 @@ WHERE classes__user_relation.user_id = ?`;
         }
         query = mysql.format(statement, [userID]);
         queryRS = await module.exports.dbQuery_promise(query);
-        for(let i=0; i<queryRS.length; i++){
-            queryRS[i]['DOYP'] = module.exports.getDaysFromStartOfYear(new Date(queryRS[i]['date']).getFullYear() + '-' +((new Date(queryRS[0]['date']).getMonth())+1)+ '-' + new Date(queryRS[i]['date']).getDate());
+        for (let i = 0; i < queryRS.length; i++) {
+            queryRS[i]['DOYP'] = module.exports.getDaysFromStartOfYear(new Date(queryRS[i]['date']).getFullYear() + '-' + ((new Date(queryRS[0]['date']).getMonth()) + 1) + '-' + new Date(queryRS[i]['date']).getDate());
         }
-        
+
         return queryRS;
     },
 

@@ -545,6 +545,18 @@ const getTeacherLesson = asyncHandler(async (req, res) => {
   }
 });
 
+//@route GET /v1/education/getTeacherLesson
+//@access private
+const loadCenterInfo = asyncHandler(async (req, res) => {
+  try {
+    const userID = req.user.ID;
+    let centerInfo = await educationModel.loadJcenterInfoByUser(userID);
+    res.status(200).json({ centerInfo });
+  } catch (err) {
+    res.status(500).json({ message: 'Error in fetching data!' });
+  }
+});
+
 //@route POST /v1/education/submitTeacherLessonRel
 //@access private
 const submitTeacherLessonRel = asyncHandler(async (req, res) => {
@@ -665,8 +677,8 @@ const getUserClassesToCheckForRegister = asyncHandler(async (req, res) => {
 const getAllClasses = asyncHandler(async (req, res) => {
   try {
     const { jcenter_id, permission } = req.body;
-    // if(parseInt(permission) === 2){
-    //   jcenter_id = -1;
+    // if(parseInt(permission) === 6){
+    //   jcenter_id = req.user.ID;
     // }
     let allClasses = await educationModel.loadClasses(jcenter_id);
     res.status(200).json({ allClasses });
@@ -927,7 +939,6 @@ const loadUserCart = asyncHandler(async (req, res) => {
   try {
     const userID = req.user.ID;
     let cart_item = await educationModel.loadUserCart(userID);
-    console.log(userID);
     res.status(200).json({ cart_item });
   } catch (err) {
     console.log(err);
@@ -955,6 +966,35 @@ const addCenterToTeacher = asyncHandler(async (req, res) => {
     const userID = req.user.ID;
     let addCenterToTeacher = await educationModel.addCenterToTeacher(userID, req.body.selectedCenterID);
     res.status(200).json({ addCenterToTeacher });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "خطا در دریافت اطلاعات" });
+  }
+});
+
+//@route Post /v1/education/serachTeacherByNationalCode
+//@access private
+const serachTeacherByNationalCode = asyncHandler(async (req, res) => {
+  try {
+    const userID = req.user.ID;
+    const { teacherNationalCode } = req.body;
+    let serachResult = await educationModel.serachTeacherByNationalCode(teacherNationalCode);
+    res.status(200).json({ serachResult });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "خطا در دریافت اطلاعات" });
+  }
+});
+
+
+//@route Post /v1/education/submitAddTeacherRequest
+//@access private
+const submitAddTeacherRequest = asyncHandler(async (req, res) => {
+  try {
+    const userID = req.user.ID;
+    const { foundTeacherId , jcenterId } = req.body;
+    let serachResult = await educationModel.submitAddTeacherRequest(foundTeacherId , jcenterId);
+    res.status(200).json({ serachResult });
   } catch (err) {
     console.log(err);
     res.status(500).json({ message: "خطا در دریافت اطلاعات" });
@@ -1160,5 +1200,8 @@ module.exports = {
   getTeacherWeeklySchedule,
   getTeacherCenter,
   addCenterToTeacher,
-  getTeacherLesson
+  getTeacherLesson,
+  loadCenterInfo,
+  serachTeacherByNationalCode,
+  submitAddTeacherRequest
 };

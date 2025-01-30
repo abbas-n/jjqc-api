@@ -390,6 +390,24 @@ const deleteJcenter = asyncHandler(async (req, res) => {
   }
 });
 
+//@desc delete jahad center
+//@route POST /api/v1/data/getJCenterOperatorList
+//@access private
+const getJCenterOperatorList = asyncHandler(async (req, res) => {
+  try {
+    const { jcenterId } = req.body;
+    let operatorList = await PModel.getJCenterOperatorList(jcenterId);
+    if (operatorList.length > 0) {
+      res.status(200).json({ operatorList });
+    } else {
+      res.status(400).json({ message: 'خطا در عملیات' });
+    }
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "خطا در دریافت اطلاعات" });
+  }
+});
+
 //@desc get jahad departments Data
 //@route get /api/v1/data/getJCenterWithSubCenters
 //@access private
@@ -549,6 +567,20 @@ const getClassUserList = asyncHandler(async (req, res) => {
 });
 
 //@desc get jahad center buildings
+//@route get /api/v1/data/getClassUserList
+//@access private
+const getClassCancelationUserList = asyncHandler(async (req, res) => {
+  try {
+    const { classId } = req.body;
+    let classUserList = await PModel.getClassCancelationUserList(classId);
+    res.status(200).json({ classUserList: classUserList });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "خطا در دریافت اطلاعات" });
+  }
+});
+
+//@desc get jahad center buildings
 //@route get /api/v1/data/changeUserSessionStatus
 //@access private
 const changeUserSessionStatus = asyncHandler(async (req, res) => {
@@ -556,6 +588,48 @@ const changeUserSessionStatus = asyncHandler(async (req, res) => {
     const { userSessionId , targetStatus } = req.body;
     let classUserList = await PModel.changeUserSessionStatus(userSessionId , targetStatus);
     res.status(200).json({ classUserList: classUserList });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "خطا در دریافت اطلاعات" });
+  }
+});
+
+//@desc get jahad center buildings
+//@route get /api/v1/data/acceptCancelRequest
+//@access private
+const acceptCancelRequest = asyncHandler(async (req, res) => {
+  try {
+    const { requestId , jcenterId } = req.body;
+    const userID = req.user.ID;
+    let acceptRequest = await PModel.acceptCancelRequest(requestId , jcenterId , userID);
+    res.status(200).json({ acceptRequest: acceptRequest });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "خطا در دریافت اطلاعات" });
+  }
+});
+
+//@desc get jahad center buildings
+//@route get /api/v1/data/getPayBackData
+//@access private
+const getPayBackData = asyncHandler(async (req, res) => {
+  try {
+    const { jcenterId } = req.body;
+    let payBackData = await PModel.getPayBackData(jcenterId);
+    res.status(200).json({ payBackData: payBackData });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "خطا در دریافت اطلاعات" });
+  }
+});
+//@desc get jahad center buildings
+//@route get /api/v1/data/acceptPayBack
+//@access private
+const acceptPayBack = asyncHandler(async (req, res) => {
+  try {
+    const { requestId } = req.body;
+    let acceptRequest = await PModel.acceptPayBack(requestId);
+    res.status(200).json({ acceptRequest: acceptRequest });
   } catch (err) {
     console.log(err);
     res.status(500).json({ message: "خطا در دریافت اطلاعات" });
@@ -627,6 +701,39 @@ const submitJbuilding = asyncHandler(async (req, res) => {
   try {
     const { jbuildingData, jcenterId } = req.body;
     let submitRS = await PModel.submitJbuilding(jbuildingData, jcenterId);
+    if (submitRS > 0) {
+      res.status(200).json({ message: 'اطلاعات با موفقیت ثبت شد' });
+    } else {
+      res.status(400).json({ message: 'خطا در ثبت اطلاعات' });
+    }
+  } catch (err) {
+    res.status(500).json({ message: "خطا در دریافت اطلاعات" });
+  }
+});
+//@desc submit or update jahad center
+//@route POST /api/v1/data/submitOperator
+//@access private
+const submitOperator = asyncHandler(async (req, res) => {
+  try {
+    const { operatorData, jcenterId } = req.body;
+    let submitRS = await PModel.submitOperator(operatorData, jcenterId);
+    if (submitRS > 0) {
+      res.status(200).json({ message: 'اطلاعات با موفقیت ثبت شد' });
+    } else {
+      res.status(400).json({ message: 'خطا در ثبت اطلاعات' });
+    }
+  } catch (err) {
+    res.status(500).json({ message: "خطا در دریافت اطلاعات" });
+  }
+});
+
+//@desc submit or update jahad center
+//@route POST /api/v1/data/deleteOperator
+//@access private
+const deleteOperator = asyncHandler(async (req, res) => {
+  try {
+    const { operatorId } = req.body;
+    let submitRS = await PModel.deleteOperator(operatorId);
     if (submitRS > 0) {
       res.status(200).json({ message: 'اطلاعات با موفقیت ثبت شد' });
     } else {
@@ -971,5 +1078,12 @@ module.exports = {
   getClassUserList,
   changeUserSessionStatus,
   submitUserListInfo,
-  loadMemberWeekLyPlan
+  loadMemberWeekLyPlan,
+  getJCenterOperatorList,
+  submitOperator,
+  deleteOperator,
+  getClassCancelationUserList,
+  acceptCancelRequest,
+  getPayBackData,
+  acceptPayBack
 };

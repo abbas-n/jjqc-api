@@ -31,6 +31,9 @@ router.post("/getJcenterChildCenters", dataCtrl.getJcenterChildCenters);
 router.post("/getAllJcentersData", dataCtrl.getAllJcentersData); 
 router.post("/submitJcenter", dataCtrl.submitJcenter);
 router.post("/deleteJcenter", dataCtrl.deleteJcenter); 
+router.post("/getJCenterOperatorList", dataCtrl.getJCenterOperatorList); 
+router.post("/submitOperator", dataCtrl.submitOperator); 
+router.post("/deleteOperator", dataCtrl.deleteOperator); 
 //-----------------------------------------------------------------------------------
 router.post("/getAllJbuildingsData", dataCtrl.getAllJbuildingsData);
 router.post("/submitJbuilding", dataCtrl.submitJbuilding); 
@@ -50,8 +53,12 @@ router.post("/deleteSession", dataCtrl.deleteSession);
 router.post("/deleteAllSession", dataCtrl.deleteAllSession);
 router.post("/autoSessionGenerator", dataCtrl.autoSessionGenerator);
 router.post("/getClassUserList", dataCtrl.getClassUserList);
+router.post("/getClassCancelationUserList", dataCtrl.getClassCancelationUserList);
 router.post("/changeUserSessionStatus", dataCtrl.changeUserSessionStatus);
 router.post("/submitUserListInfo", dataCtrl.submitUserListInfo);
+router.post("/acceptCancelRequest", dataCtrl.acceptCancelRequest);
+router.post("/getPayBackData", dataCtrl.getPayBackData);
+router.post("/acceptPayBack", dataCtrl.acceptPayBack);
 // router.post("/deleteJcenter", dataCtrl.deleteJcenter); 
 //-----------------------------------------------------------------------------------
 router.get("/getAllExamcentersData", dataCtrl.getAllExamcentersData);

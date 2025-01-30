@@ -52,6 +52,8 @@ router.get("/getTeacherInfo", educationCtrl.getTeacherInfo);
 router.get("/getTeacherWeeklySchedule", educationCtrl.getTeacherWeeklySchedule);
 router.get("/getTeacherCenter", educationCtrl.getTeacherCenter);
 router.post("/addCenterToTeacher", educationCtrl.addCenterToTeacher);
+router.post("/serachTeacherByNationalCode", educationCtrl.serachTeacherByNationalCode);
+router.post("/submitAddTeacherRequest", educationCtrl.submitAddTeacherRequest);
 
 
 //-------------------------Cart------------------------------------
@@ -83,6 +85,7 @@ router.post("/handleEnterMoodle", educationCtrl.handleEnterMoodle);
 router.post("/handleEnterOnlineClass", educationCtrl.handleEnterOnlineClass);
 router.post("/getMeetingRecordings", educationCtrl.getMeetingRecordings);
 router.post("/playRecordedSessionVideo", educationCtrl.playRecordedSessionVideo);
+router.get("/loadCenterInfo", educationCtrl.loadCenterInfo);
 
 
 
