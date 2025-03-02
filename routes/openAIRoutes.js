@@ -6,7 +6,7 @@ router.use(validateToken);
 
 
 //-------------------------OPENAI---------------------------------
-router.get("/getTestQuestion", aiController.generateQuestion);
+router.post("/getTestQuestion", aiController.generateQuestion);
 
 
 

@@ -69,7 +69,7 @@ router.post("/submitJdepartment", dataCtrl.submitJdepartment);
 router.post("/deleteJdepartment", dataCtrl.deleteJdepartment);
 router.post("/getJCenterDepartment", dataCtrl.getJCenterDepartment);
 router.post("/getJCenterWithSubCenters", dataCtrl.getJCenterWithSubCenters);
-router.get("/getAllJdepartmentsData", dataCtrl.getAllJdepartmentsData);
+router.post("/getAllJdepartmentsData", dataCtrl.getAllJdepartmentsData);
 //-----------------------------------------------------------------------------------
 router.get("/getRequestsFilters", dataCtrl.getRequestsFilters);
 router.post("/getRequestsData", dataCtrl.getRequestsData); 
@@ -81,6 +81,7 @@ router.post("/deleteJrequest", dataCtrl.deleteJrequest);
 router.get("/loadLastLogin", dataCtrl.loadLastLogin);
 router.get("/loadDashboardData", dataCtrl.loadDashboardData);
 router.get("/loadMemberWeekLyPlan", dataCtrl.loadMemberWeekLyPlan);
+
 
 
 

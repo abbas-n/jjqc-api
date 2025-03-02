@@ -237,11 +237,15 @@ module.exports = {
         try {
             let statement, query, queryRS;
             let jcenterData = await module.exports.getJcentersData(jcenterId);
+            let needPermission = 5;
+            if (jcenterData[0]['center_mood'] === 'center') {
+                needPermission = 6;
+            }
             const uCode = await tools.generateUniqueCode('user__info', 'code', 6);
             const hashedPassword = await bcrypt.hash(uCode, 10);
             statement = "INSERT INTO user__info(code,fname,lname,mobile,password,permission,jcenter_id) VALUES (?,?,?,?,?,?,?)";
             // query = mysql.format(statement, [uCode, jcenterData[0]['title'], '', uCode, hashedPassword, 6, jcenterData[0]['parent_id']]);
-            query = mysql.format(statement, [uCode, jcenterData[0]['title'], '', uCode, hashedPassword, 6, jcenterId]);
+            query = mysql.format(statement, [uCode, jcenterData[0]['title'], '', uCode, hashedPassword, needPermission, jcenterId]);
             queryRS = await module.exports.dbQuery_promise(query);
             if (queryRS.insertId > 0) {
                 statement = "INSERT INTO user__them_setting(user_id) VALUES (?)";
@@ -314,10 +318,12 @@ module.exports = {
             jcenters__details.signature_holder_name,
             jcenters__details.signature_position,
             jcenters__details.signature_img,
-            jcenters__details.center_indicator_code, city__ostan.name AS cityName
+            jcenters__details.center_indicator_code, city__ostan.name AS cityName,
+            user__info.code
             FROM jcenters__info
             INNER JOIN city__ostan ON city__ostan.ID=jcenters__info.city_id 
             LEFT JOIN jcenters__details ON jcenters__details.jcenter_id = jcenters__info.ID
+            LEFT JOIN user__info ON user__info.jcenter_id= jcenters__info.ID AND user__info.permission = 5
             WHERE jcenters__info.center_mood=?`;
             query = mysql.format(statement, [centerMood]);
         } else if (centerMood === 'center') {
@@ -331,11 +337,13 @@ module.exports = {
             jcenters__details.signature_img,
             jcenters__details.center_indicator_code,
             city__ostan.name AS cityName, 
-            parentCenter.title AS parentTitle
+            parentCenter.title AS parentTitle,
+            user__info.code
             FROM jcenters__info
             INNER JOIN city__ostan ON city__ostan.ID=jcenters__info.city_id 
             LEFT JOIN jcenters__details ON jcenters__details.jcenter_id = jcenters__info.ID
             INNER JOIN jcenters__info AS parentCenter ON parentCenter.ID =  jcenters__info.parent_id
+            LEFT JOIN user__info ON user__info.jcenter_id= jcenters__info.ID AND user__info.permission = 6
             WHERE jcenters__info.parent_id=? AND jcenters__info.center_mood=?`;
             query = mysql.format(statement, [jmainCenterId, centerMood]);
         }
@@ -364,8 +372,9 @@ module.exports = {
             queryRS = await module.exports.dbQuery_promise(query);
             statement = `INSERT INTO  jcenters__details (jcenter_id,telegram,instagram,aparat,title_in_certificate,signature_holder_name,signature_position,center_indicator_code) VALUES(?,?,?,?,?,?,?,?)`;
             query = mysql.format(statement, [queryRS.insertId, jcenterData.telegram, jcenterData.instagram, jcenterData.aparat, jcenterData.title_in_certificate, jcenterData.signature_holder_name, jcenterData.signature_position, jcenterData.center_indicator_code]);
-            queryRS = await module.exports.dbQuery_promise(query);
+            await module.exports.dbQuery_promise(query);
             if (queryRS.insertId > 0) {
+                await module.exports.createUserForJcenter(queryRS.insertId);
                 return queryRS.insertId;
             } else {
                 return -1;
@@ -703,7 +712,7 @@ user__payback_need.jcenters_id=?`;
         query = mysql.format(statement, [jcenterId]);
         queryRS = await module.exports.dbQuery_promise(query);
 
-        
+
         return queryRS;
     },
     acceptPayBack: async (requestId) => {
@@ -917,10 +926,10 @@ user__payback_need.jcenters_id=?`;
             return -1;
         }
     },
-    getAllJdepartmentsData: async () => {
+    getAllJdepartmentsData: async (mood) => {
         // console.time("getAllJdepartmentsData");
         let statement, query, queryRS;
-        statement = `SELECT education__department.ID,education__department.title FROM education__department WHERE status=?`;
+        statement = `SELECT education__department.ID,education__department.title,education__department.status FROM education__department ${mood === 'Active' ? 'WHERE status=?' : ''}`;
         query = mysql.format(statement, ['Active']);
         queryRS = await module.exports.dbQuery_promise(query);
         // console.timeEnd("getAllJdepartmentsData");
@@ -962,7 +971,7 @@ user__payback_need.jcenters_id=?`;
     },
     deleteJdepartment: async (jdepartmentId) => {
         let statement, query, queryRS;
-        statement = `DELETE FROM education__department WHERE ID=?`;
+        statement = `UPDATE education__department SET status='Inactive' WHERE ID=?`;
         query = mysql.format(statement, [jdepartmentId]);
         queryRS = await module.exports.dbQuery_promise(query);
         if (queryRS.affectedRows > 0) {
@@ -1275,6 +1284,24 @@ WHERE classes__user_relation.user_id = ?`;
         const firstDayOfYear = moment(`${year}-01-01`, 'jYYYY-jMM-jDD');
         const daysPassed = moment(date, 'YYYY-MM-DD').diff(firstDayOfYear, 'days');
         return daysPassed + 1;
+    },
+    loadCistyOstan: async () => {
+        let statement, query, queryRS;
+        statement = `SELECT * FROM city__ostan ORDER BY name`;
+        query = mysql.format(statement, [0]);
+        queryRS = await module.exports.dbQuery_promise(query);
+        return queryRS;
+    },
+    loadJcenterForOstan: async (selectedOstan) => {
+        let statement, query, queryRS;
+        statement = `SELECT * FROM jcenters__info WHERE (parent_id IS NULL OR parent_id = 0)  AND state_id = ?`;
+        query = mysql.format(statement, [selectedOstan]);
+        queryRS = await module.exports.dbQuery_promise(query);
+        if (queryRS.length > 0) {
+            return queryRS;
+        } else {
+            return [{ ID: -1, title: 'بعدا انتخاب می کنم' }];
+        }
     },
 
 }

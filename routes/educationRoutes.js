@@ -25,6 +25,8 @@ router.get("/getAllJob", educationCtrl.getAllJob);
 router.get("/getJobType", educationCtrl.getJobType);
 router.post("/submitJob", educationCtrl.addJobInfoToDb);
 router.post("/deleteJob", educationCtrl.deleteJob);
+router.post("/loadJobLesson", educationCtrl.loadJobLesson);
+router.post("/submitJobExamRelation", educationCtrl.submitJobExamRelation);
 
 //-------------------------Job Lesson Relation------------------------------------
 router.get("/getAllJobLesson", educationCtrl.getAllJobLesson);
@@ -95,8 +97,10 @@ router.get("/getmemberInfo", educationCtrl.getmemberInfo);
 router.post("/submitMember", educationCtrl.submitMember);
 router.post("/getClassListForMembers", educationCtrl.getClassListForMembers);
 router.post("/submitUserCancelRequest", educationCtrl.submitUserCancelRequest);
+router.get("/loadAllDepartment", educationCtrl.loadAllDepartment);
 
 router.get("/sendMoodleReq", educationCtrl.sendMoodleReq);
 router.get("/sendAdobeReq", educationCtrl.sendAdobeReq);
+
 
 module.exports = router; 

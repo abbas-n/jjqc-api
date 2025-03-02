@@ -231,6 +231,32 @@ const addJobInfoToDb = asyncHandler(async (req, res) => {
   }
 });
 
+//@route POST /v1/education/loadJobLesson
+//@access private
+const loadJobLesson = asyncHandler(async (req, res) => {
+  try {
+    const userID = req.user.ID;
+    const { jobId } = req.body;
+    let jobLesson = await educationModel.loadLessonForJob(jobId);
+    res.status(200).json({ jobLesson });
+  } catch (err) {
+    res.status(500).json({ message: 'Error in fetching data!' });
+  }
+});
+
+//@route POST /v1/education/submitJobExamRelation
+//@access private
+const submitJobExamRelation = asyncHandler(async (req, res) => {
+  try {
+    const userID = req.user.ID;
+    const { jobExamRelation } = req.body;
+    let jobLesson = await educationModel.submitJobExamRelation(jobExamRelation);
+    res.status(200).json({ jobLesson });
+  } catch (err) {
+    res.status(500).json({ message: 'Error in fetching data!' });
+  }
+});
+
 //@route POST /v1/education/deleteJob
 //@access private
 const deleteJob = asyncHandler(async (req, res) => {
@@ -901,7 +927,7 @@ const getClassListForMembers = asyncHandler(async (req, res) => {
     const userID = req.user.ID;
     let membersClass;
     if (listMood === 'Active') {
-      membersClass = await educationModel.getActiveClasses(0);
+      membersClass = await educationModel.getActiveClasses(0 , userID);
     } else {
       membersClass = await educationModel.loadClassListForMember(listMood, userID);
     }
@@ -1008,8 +1034,20 @@ const submitUserCancelRequest = asyncHandler(async (req, res) => {
     const userID = req.user.ID;
     const { classId } = req.body;
     let cancelReqRS = await educationModel.submitUserCancelRequest(userID, classId);
-    console.log(cancelReqRS);
     res.status(200).json({ message: 'درخواست با موفقیت ثبت شد' });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "خطا در دریافت اطلاعات" });
+  }
+});
+
+
+//@route Get /v1/education/loadAllDepartment
+//@access private
+const loadAllDepartment = asyncHandler(async (req, res) => {
+  try {
+    let department = await educationModel.loadAllDepartment();
+    res.status(200).json({department});
   } catch (err) {
     console.log(err);
     res.status(500).json({ message: "خطا در دریافت اطلاعات" });
@@ -1203,5 +1241,8 @@ module.exports = {
   getTeacherLesson,
   loadCenterInfo,
   serachTeacherByNationalCode,
-  submitAddTeacherRequest
+  submitAddTeacherRequest,
+  loadAllDepartment,
+  loadJobLesson,
+  submitJobExamRelation
 };

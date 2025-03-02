@@ -126,7 +126,7 @@ const checkVerifyCode = asyncHandler(async (req, res) => {
 const registerUser = asyncHandler(async (req, res) => {
   try {
 
-    const { mobile, fname, lname, pass, nationalCode } = req.body;
+    const { mobile, fname, lname, pass, nationalCode , selectedCenter } = req.body;
 
     if (!mobile || !pass || !fname || !lname, !nationalCode) {
       res.status(400);
@@ -159,8 +159,8 @@ const registerUser = asyncHandler(async (req, res) => {
     } else {
       const uCode = await tools.generateUniqueCode('user__info', 'code', 6);
       const hashedPassword = await bcrypt.hash(pass, 10);
-      let sqlInsert = "INSERT INTO user__info(code,fname,lname,national_code,mobile,password,status) VALUES (?,?,?,?,?,?,?)";
-      let insert_query = mysql.format(sqlInsert, [uCode, fname, lname, nationalCode, mobile, hashedPassword, 'Not_Confirmed']);
+      let sqlInsert = "INSERT INTO user__info(code,fname,lname,national_code,mobile,password,status,jcenter_id) VALUES (?,?,?,?,?,?,?,?)";
+      let insert_query = mysql.format(sqlInsert, [uCode, fname, lname, nationalCode, mobile, hashedPassword, 'Not_Confirmed' , selectedCenter]);
       let queryRS = await PModel.dbQuery_promise(insert_query);
       if (queryRS.insertId > 0) {
         sqlInsert = "INSERT INTO user__them_setting(user_id) VALUES (?)";
@@ -438,6 +438,30 @@ const submitNewPass = asyncHandler(async (req, res) => {
   } catch (err) {
     res.status(500).json({ message: 'خطا در ثبت اطلاعات' });
   }
+  
+});
+
+
+
+//@desc update user password
+//@route POST /api/v1/auth//submitChangePass
+//@access private
+const submitChangePass = asyncHandler(async (req, res) => {
+  const userID = req.user.ID;
+  const { newPass } = req.body;
+  try {
+      const hashedPassword = await bcrypt.hash(newPass, 10);
+      let updateUser = "UPDATE user__info SET password=? WHERE ID=?";
+      updateUser = mysql.format(updateUser, [hashedPassword, userID]);
+      updateUser = await PModel.dbQuery_promise(updateUser);
+      if (updateUser.affectedRows == 1) {
+        res.status(200).json({ message: 'اطلاعات با موفقیت ثبت شد' });
+      } else {
+        res.status(500).json({ message: 'خطا در ثبت اطلاعات' });
+      }
+  } catch (err) {
+    res.status(500).json({ message: 'خطا در ثبت اطلاعات' });
+  }
 
 });
 
@@ -566,6 +590,32 @@ const setPanelThem = asyncHandler(async (req, res) => {
   }
 });
 
+//@desc get jahad Requests Data
+//@route get /api/v1/data/loadMemberWeekLyPlan
+//@access private
+const loadCistyOstan = asyncHandler(async (req, res) => {
+  try {
+    let cityOstan = await PModel.loadCistyOstan();
+    res.status(200).json({ cityOstan });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "خطا در دریافت اطلاعات" });
+  }
+});
+//@desc post jahad Requests Data
+//@route post /api/v1/data/loadJcenterForOstan
+//@access private
+const loadJcenterForOstan = asyncHandler(async (req, res) => {
+  try {
+    const { selectedOstan } = req.body;
+    let ostanJcenter = await PModel.loadJcenterForOstan(selectedOstan);
+    res.status(200).json({ ostanJcenter });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "خطا در دریافت اطلاعات" });
+  }
+});
+
 module.exports = {
   registerUser,
   loginUser,
@@ -578,7 +628,10 @@ module.exports = {
   updatePassword,
   sendCodeForPassForget,
   submitNewPass,
+  submitChangePass,
   getMenuItems,
   setPanelLight,
-  setPanelThem
+  setPanelThem,
+  loadCistyOstan,
+  loadJcenterForOstan
 };

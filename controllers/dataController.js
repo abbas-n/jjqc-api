@@ -837,11 +837,12 @@ const deleteExamcenter = asyncHandler(async (req, res) => {
 //---------------------------------------------------------------------------
 
 //@desc get jahad departments Data
-//@route get /api/v1/data/getAllJdepartmentsData
+//@route post /api/v1/data/getAllJdepartmentsData
 //@access private
 const getAllJdepartmentsData = asyncHandler(async (req, res) => {
   try {
-    let allJdepartmentsData = await PModel.getAllJdepartmentsData();
+    const { mood } = req.body;
+    let allJdepartmentsData = await PModel.getAllJdepartmentsData(mood);
     res.status(200).json({ allJdepartmentsData: allJdepartmentsData });
   } catch (err) {
     console.log(err);
@@ -942,7 +943,7 @@ const submitJRequestForm = asyncHandler(async (req, res) => {
       submitRS = await PModel.manageJAddDepartmentRequest(jRequestData, jRequestType, userDataRS);
     } else if (jRequestType === 2) {//education group request
       submitRS = await PModel.manageJEduGroupRequest(jRequestData, jRequestType, userDataRS);
-    } else if (jRequestType === 6) {//education group request
+    } else if (jRequestType === 6) {//sub center request
       submitRS = await PModel.manageJNewCenterRequest(jRequestData, jRequestType, userDataRS);
     }
     if (submitRS > 0) {
@@ -1016,6 +1017,8 @@ const loadMemberWeekLyPlan = asyncHandler(async (req, res) => {
     res.status(500).json({ message: "خطا در دریافت اطلاعات" });
   }
 });
+
+
 
 
 

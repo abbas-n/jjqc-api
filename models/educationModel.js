@@ -217,6 +217,36 @@ WHERE classes__teacher_relation.classe_id=?`;
         queryRS = await module.exports.dbQuery_promise(query);
         return queryRS;
     },
+    submitJobExamRelation: async (jobExamRelation) => {
+        let statement, query, queryRS;
+        for(let i=0; i<jobExamRelation.length; i++){
+            statement = `UPDATE job__lesson_relation SET question_num=?,rate =? WHERE ID=?`;
+            query = mysql.format(statement, [jobExamRelation[i]['question_num'],jobExamRelation[i]['rate'],jobExamRelation[i]['ID']]);
+            queryRS = await module.exports.dbQuery_promise(query);
+        }
+        return queryRS;
+    },
+    loadLessonForJob: async (jobId) => {
+        let statement, query, queryRS;
+        statement = `SELECT 
+job__lesson_relation.question_num,
+job__lesson_relation.job_id,
+job__lesson_relation.lesson_id,
+job__lesson_relation.rate,
+lesson__info.title AS lesson_text,
+job__info.title AS job_text,
+job__info.title AS job_title,
+job__lesson_relation.ID
+FROM 
+job__lesson_relation
+INNER JOIN job__info ON job__lesson_relation.job_id = job__info.ID
+INNER JOIN lesson__info ON job__lesson_relation.lesson_id = lesson__info.ID
+WHERE
+job__lesson_relation.job_id = ?`;
+        query = mysql.format(statement, [jobId]);
+        queryRS = await module.exports.dbQuery_promise(query);
+        return queryRS;
+    },
     addJobToDb: async (queryBody, userID) => {
         let statement, query, queryRS;
         if (queryBody.ID) {
@@ -659,6 +689,19 @@ WHERE lesson__eduGroup_relation.education_group_id = ?`;
                 query = mysql.format(statement, [classId, deliveryResult[i]['delivery_id']]);
                 queryRS = await module.exports.dbQuery_promise(query);
             }
+
+            queryRS = await module.exports.dbQuery_promise(`SELECT 
+GROUP_CONCAT(classes__delivery_type.title SEPARATOR " ") AS Delivery_Text
+FROM 
+classes__delivery_relation 
+INNER JOIN classes__delivery_type ON classes__delivery_relation.delivery_id = classes__delivery_type.ID
+WHERE 
+classe_id = `+classId+`
+GROUP BY classe_id`);
+            let deliverText = queryRS[0]['Delivery_Text'];
+            statement = 'UPDATE classes__info SET delivery_text=? WHERE ID=?';
+            query = mysql.format(statement, [deliverText ,classId]);
+            queryRS = await module.exports.dbQuery_promise(query);
         }
 
         return queryRS;
@@ -1012,6 +1055,13 @@ teachers__info.user_id =?`;
         let statement, query, queryRS;
         statement = `UPDATE classes__user_relation SET status='Cancel_request' WHERE user_id=? AND class_id=?`;
         query = mysql.format(statement, [userId, classId]);
+        queryRS = await module.exports.dbQuery_promise(query);
+        return queryRS;
+    },
+    loadAllDepartment: async () => {
+        let statement, query, queryRS;
+        statement = `SELECT * FROM jcenters__info WHERE center_mood = 'center'`;
+        query = mysql.format(statement, [0]);
         queryRS = await module.exports.dbQuery_promise(query);
         return queryRS;
     },

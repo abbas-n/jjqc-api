@@ -9,7 +9,7 @@ const port = process.env.PORT;
 app.use(express.json({limit: '10mb'}));
 app.use(cookieParser());
 
-app.use(cors({ origin: ["http://localhost:3000","https://jjqc.ir","http://jjqc.ir","https://hrdc.ir","http://192.168.1.73:3000","http://192.168.1.104:3000"],credentials: true}));
+app.use(cors({ origin: ["http://localhost:3000","https://jjqc.ir","http://jjqc.ir","https://hrdc.ir","http://192.168.1.73:3000","http://192.168.1.233:3000"],credentials: true}));
 
 app.use(express.json());
 app.use("/auth", require("./routes/authRoutes"));
