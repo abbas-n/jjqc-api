@@ -390,6 +390,35 @@ const deleteJcenter = asyncHandler(async (req, res) => {
   }
 });
 
+//@route POST /v1/education/changeJcenterStatus
+//@access private
+const changeJcenterStatus = asyncHandler(async (req, res) => {
+  try {
+    const { jcenterId, targetStatus } = req.body;
+    await PModel.changeJcenterStatus(jcenterId, targetStatus);
+    res.status(200).json({ message: 'اطلاعات با موفقیت ثبت شد' });
+  } catch (err) {
+    res.status(500).json({ message: 'خطا در بروزرسانی اطلاعات!' });
+  }
+});
+
+//@route POST /v1/education/resetJcenterPassword
+//@access private
+const resetJcenterPassword = asyncHandler(async (req, res) => {
+  try {
+    const { jcenterId } = req.body;
+    let rs = await PModel.resetJcenterPassword(jcenterId);
+    if(rs===-1){
+      res.status(500).json({ message: 'اطلاعات کاربری واحد یافت نشد!' });
+    }else{
+      res.status(200).json({ message: 'اطلاعات با موفقیت ثبت شد' });
+    }
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: 'خطا در بروزرسانی اطلاعات!' });
+  }
+});
+
 //@desc delete jahad center
 //@route POST /api/v1/data/getJCenterOperatorList
 //@access private
@@ -403,7 +432,6 @@ const getJCenterOperatorList = asyncHandler(async (req, res) => {
       res.status(400).json({ message: 'خطا در عملیات' });
     }
   } catch (err) {
-    console.log(err);
     res.status(500).json({ message: "خطا در دریافت اطلاعات" });
   }
 });
@@ -414,7 +442,7 @@ const getJCenterOperatorList = asyncHandler(async (req, res) => {
 const getJCenterWithSubCenters = asyncHandler(async (req, res) => {
   try {
     const { userUJCId } = req.body;
-    let JCenterData = await PModel.getJcentersData(userUJCId); 
+    let JCenterData = await PModel.getJcentersData(userUJCId);
     let JCenterSubCenters = await PModel.getJcenterSubCentersData(userUJCId);
     let mergedArray = [...JCenterData, ...JCenterSubCenters];
     res.status(200).json({ JCenterSubCenters: mergedArray });
@@ -585,8 +613,8 @@ const getClassCancelationUserList = asyncHandler(async (req, res) => {
 //@access private
 const changeUserSessionStatus = asyncHandler(async (req, res) => {
   try {
-    const { userSessionId , targetStatus } = req.body;
-    let classUserList = await PModel.changeUserSessionStatus(userSessionId , targetStatus);
+    const { userSessionId, targetStatus } = req.body;
+    let classUserList = await PModel.changeUserSessionStatus(userSessionId, targetStatus);
     res.status(200).json({ classUserList: classUserList });
   } catch (err) {
     console.log(err);
@@ -599,9 +627,9 @@ const changeUserSessionStatus = asyncHandler(async (req, res) => {
 //@access private
 const acceptCancelRequest = asyncHandler(async (req, res) => {
   try {
-    const { requestId , jcenterId } = req.body;
+    const { requestId, jcenterId } = req.body;
     const userID = req.user.ID;
-    let acceptRequest = await PModel.acceptCancelRequest(requestId , jcenterId , userID);
+    let acceptRequest = await PModel.acceptCancelRequest(requestId, jcenterId, userID);
     res.status(200).json({ acceptRequest: acceptRequest });
   } catch (err) {
     console.log(err);
@@ -834,6 +862,18 @@ const deleteExamcenter = asyncHandler(async (req, res) => {
   }
 });
 
+//@route POST /v1/education/changeJexamcenterStatus
+//@access private
+const changeJexamcenterStatus = asyncHandler(async (req, res) => {
+  try {
+    const { jexamcenterId, targetStatus } = req.body;
+    await PModel.changeJexamcenterStatus(jexamcenterId, targetStatus);
+    res.status(200).json({ message: 'اطلاعات با موفقیت ثبت شد' });
+  } catch (err) {
+    res.status(500).json({ message: 'خطا در بروزرسانی اطلاعات!' });
+  }
+});
+
 //---------------------------------------------------------------------------
 
 //@desc get jahad departments Data
@@ -898,6 +938,17 @@ const deleteJdepartment = asyncHandler(async (req, res) => {
   }
 });
 
+//@route POST /v1/education/changeLessonStatus
+//@access private
+const changeJdepartmentStatus = asyncHandler(async (req, res) => {
+  try {
+    const { jdepartmentId, targetStatus } = req.body;
+    await PModel.updateJdepartmentStatus(jdepartmentId, targetStatus);
+    res.status(200).json({ message: 'اطلاعات با موفقیت ثبت شد' });
+  } catch (err) {
+    res.status(500).json({ message: 'خطا در بروزرسانی اطلاعات!' });
+  }
+});
 //---------------------------------------------------------------------------
 
 //@desc get jahad Requests Data
@@ -943,6 +994,8 @@ const submitJRequestForm = asyncHandler(async (req, res) => {
       submitRS = await PModel.manageJAddDepartmentRequest(jRequestData, jRequestType, userDataRS);
     } else if (jRequestType === 2) {//education group request
       submitRS = await PModel.manageJEduGroupRequest(jRequestData, jRequestType, userDataRS);
+    } else if (jRequestType === 5) {//teacher join request
+      submitRS = await PModel.manageJAddTeacherRequest(jRequestData, jRequestType, userDataRS);
     } else if (jRequestType === 6) {//sub center request
       submitRS = await PModel.manageJNewCenterRequest(jRequestData, jRequestType, userDataRS);
     }
@@ -1048,6 +1101,8 @@ module.exports = {
   getAllJcentersData,
   submitJcenter,
   deleteJcenter,
+  changeJcenterStatus,
+  resetJcenterPassword,
   getJCenterWithSubCenters,
   getAllJbuildingsData,
   submitBuildingRoomRel,
@@ -1057,10 +1112,12 @@ module.exports = {
   getAllExamcentersData,
   submitExamcenter,
   deleteExamcenter,
+  changeJexamcenterStatus,
   getAllJdepartmentsData,
   getJCenterDepartment,
   submitJdepartment,
   deleteJdepartment,
+  changeJdepartmentStatus,
   getRequestsFilters,
   getRequestsData,
   submitJRequestForm,

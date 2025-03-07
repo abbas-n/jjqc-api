@@ -237,7 +237,7 @@ module.exports = {
         try {
             let statement, query, queryRS;
             let jcenterData = await module.exports.getJcentersData(jcenterId);
-            let needPermission = 5;
+            let needPermission = 3;
             if (jcenterData[0]['center_mood'] === 'center') {
                 needPermission = 6;
             }
@@ -269,19 +269,25 @@ module.exports = {
     getJcentersData: async (jcenterId) => {
         let statement, query, queryRS;
         statement = `SELECT jcenters__info.*,
-        jcenters__details.telegram,
-        jcenters__details.instagram, 
-        jcenters__details.aparat,
-        jcenters__details.title_in_certificate,
-        jcenters__details.signature_holder_name,
-        jcenters__details.signature_position,
-        jcenters__details.signature_img,
-        jcenters__details.center_indicator_code, 
-        city__ostan.name AS cityName
-            FROM jcenters__info
-            INNER JOIN city__ostan ON city__ostan.ID=jcenters__info.city_id 
-            LEFT JOIN jcenters__details ON jcenters__details.jcenter_id = jcenters__info.ID
-            WHERE jcenters__info.ID=?`;
+       jcenters__details.telegram,
+       jcenters__details.instagram, 
+       jcenters__details.aparat,
+       jcenters__details.title_in_certificate,
+       jcenters__details.signature_holder_name,
+       jcenters__details.signature_position,
+       jcenters__details.signature_img,
+       jcenters__details.center_indicator_code, 
+       city__ostan.name AS cityName,
+       user__info.code
+FROM jcenters__info
+INNER JOIN city__ostan ON city__ostan.ID = jcenters__info.city_id 
+LEFT JOIN jcenters__details ON jcenters__details.jcenter_id = jcenters__info.ID
+LEFT JOIN user__info ON user__info.jcenter_id = jcenters__info.ID 
+                     AND user__info.permission = CASE 
+                                                 WHEN jcenters__info.center_mood = 'main_center' THEN 3
+                                                 WHEN jcenters__info.center_mood = 'center' THEN 6
+                                                 END
+WHERE jcenters__info.ID = ?`;
         query = mysql.format(statement, [jcenterId]);
         queryRS = await module.exports.dbQuery_promise(query);
         return queryRS;
@@ -323,7 +329,7 @@ module.exports = {
             FROM jcenters__info
             INNER JOIN city__ostan ON city__ostan.ID=jcenters__info.city_id 
             LEFT JOIN jcenters__details ON jcenters__details.jcenter_id = jcenters__info.ID
-            LEFT JOIN user__info ON user__info.jcenter_id= jcenters__info.ID AND user__info.permission = 5
+            LEFT JOIN user__info ON user__info.jcenter_id= jcenters__info.ID AND user__info.permission = 3
             WHERE jcenters__info.center_mood=?`;
             query = mysql.format(statement, [centerMood]);
         } else if (centerMood === 'center') {
@@ -385,8 +391,8 @@ module.exports = {
         let statement, query, queryRS;
         let cityData = await module.exports.getCityData(jcenterData.city_id);
         if (jcenterData.ID) {
-            statement = `UPDATE jcenters__info SET title=?,parent_id=?,state_id=?,city_id=?,phone=?,fax=?,email=?,web_site=?,address=?,description=?,work_hour=?,show_mainPage_status=?,status=? WHERE ID=?`;
-            query = mysql.format(statement, [jcenterData.title, jcenterData.parent_id, cityData[0]['parent'], jcenterData.city_id, jcenterData.phone, jcenterData.fax, jcenterData.email, jcenterData.web_site, jcenterData.address, jcenterData.description, jcenterData.work_hour, jcenterData.show_mainPage_status, jcenterData.status, jcenterData.ID]);
+            statement = `UPDATE jcenters__info SET title=?,parent_id=?,state_id=?,city_id=?,phone=?,fax=?,email=?,web_site=?,address=?,description=?,work_hour=?,show_mainPage_status=?,status=?,logo=?,signature_image=? WHERE ID=?`;
+            query = mysql.format(statement, [jcenterData.title, jcenterData.parent_id, cityData[0]['parent'], jcenterData.city_id, jcenterData.phone, jcenterData.fax, jcenterData.email, jcenterData.web_site, jcenterData.address, jcenterData.description, jcenterData.work_hour, jcenterData.show_mainPage_status, jcenterData.status, jcenterData.logo, jcenterData.signature_image, jcenterData.ID]);
             queryRS = await module.exports.dbQuery_promise(query);
             statement = `UPDATE jcenters__details SET telegram=?,instagram=?,aparat=?,title_in_certificate=?,signature_holder_name=?,signature_position=?,center_indicator_code=? WHERE jcenter_id=?`;
             query = mysql.format(statement, [jcenterData.telegram, jcenterData.instagram, jcenterData.aparat, jcenterData.title_in_certificate, jcenterData.signature_holder_name, jcenterData.signature_position, jcenterData.center_indicator_code, jcenterData.ID]);
@@ -397,8 +403,8 @@ module.exports = {
                 return -1;
             }
         } else {
-            statement = `INSERT INTO  jcenters__info (title,parent_id,center_mood,state_id,city_id,phone,fax,email,web_site,address,description,work_hour,show_mainPage_status,status) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)`;
-            query = mysql.format(statement, [jcenterData.title, jcenterData.parent_id, 'center', cityData[0]['parent'], jcenterData.city_id, jcenterData.phone, jcenterData.fax, jcenterData.email, jcenterData.web_site, jcenterData.address, jcenterData.description, jcenterData.work_hour, jcenterData.show_mainPage_status, 'Need_Confirm']);
+            statement = `INSERT INTO  jcenters__info (title,parent_id,center_mood,state_id,city_id,phone,fax,email,web_site,address,description,work_hour,show_mainPage_status,status,logo,signature_image) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`;
+            query = mysql.format(statement, [jcenterData.title, jcenterData.parent_id, 'center', cityData[0]['parent'], jcenterData.city_id, jcenterData.phone, jcenterData.fax, jcenterData.email, jcenterData.web_site, jcenterData.address, jcenterData.description, jcenterData.work_hour, jcenterData.show_mainPage_status, 'Need_Confirm', jcenterData.logo, jcenterData.signature_image]);
             let needJcenterId = await module.exports.dbQuery_promise(query);
             statement = `INSERT INTO  jcenters__details (jcenter_id,telegram,instagram,aparat,title_in_certificate,signature_holder_name,signature_position,center_indicator_code) VALUES(?,?,?,?,?,?,?,?)`;
             query = mysql.format(statement, [needJcenterId.insertId, jcenterData.telegram, jcenterData.instagram, jcenterData.aparat, jcenterData.title_in_certificate, jcenterData.signature_holder_name, jcenterData.signature_position, jcenterData.center_indicator_code]);
@@ -420,6 +426,27 @@ module.exports = {
         queryRS = await module.exports.dbQuery_promise(query);
         if (queryRS.affectedRows > 0) {
             return queryRS.affectedRows;
+        } else {
+            return -1;
+        }
+    },
+    changeJcenterStatus: async (jcenterId, targetStatus) => {
+        let statement, query, queryRS;
+        statement = `UPDATE jcenters__info SET status=? WHERE ID=?`;
+        query = mysql.format(statement, [targetStatus, jcenterId]);
+        queryRS = await module.exports.dbQuery_promise(query);
+        return queryRS;
+    },
+    resetJcenterPassword: async (jcenterId) => {
+        let jcenterData = await module.exports.getJcentersData(jcenterId);
+        if (jcenterData[0]['code'] > 0) {
+
+            const hashedPassword = await bcrypt.hash(jcenterData[0]['code'], 10);
+            let statement, query, queryRS;
+            statement = `UPDATE user__info SET password=? WHERE code=?`;
+            query = mysql.format(statement, [hashedPassword, jcenterData[0]['code']]);
+            queryRS = await module.exports.dbQuery_promise(query);
+            return queryRS;
         } else {
             return -1;
         }
@@ -915,6 +942,13 @@ user__payback_need.jcenters_id=?`;
             return -1;
         }
     },
+    changeJexamcenterStatus: async (jexamcenterId, targetStatus) => {
+        let statement, query, queryRS;
+        statement = `UPDATE jexam__centers SET status=? WHERE ID=?`;
+        query = mysql.format(statement, [targetStatus, jexamcenterId]);
+        queryRS = await module.exports.dbQuery_promise(query);
+        return queryRS;
+    },
     deleteOperator: async (operatorId) => {
         let statement, query, queryRS;
         statement = `DELETE FROM user__info WHERE ID=?`;
@@ -979,6 +1013,13 @@ user__payback_need.jcenters_id=?`;
         } else {
             return -1;
         }
+    },
+    updateJdepartmentStatus: async (jdepartmentId, targetStatus) => {
+        let statement, query, queryRS;
+        statement = `UPDATE education__department SET status=? WHERE ID=?`;
+        query = mysql.format(statement, [targetStatus, jdepartmentId]);
+        queryRS = await module.exports.dbQuery_promise(query);
+        return queryRS;
     },
     getRequestsFilters: async () => {
         let statement, query, queryRS;
@@ -1065,6 +1106,24 @@ user__payback_need.jcenters_id=?`;
             LEFT JOIN user__info AS jUser ON jUser.ID = jcenters__request.user_id
             WHERE jcenters__request.status!='Deleted' AND type = ? `+ needJCenterFilter;
         }
+        if (requestType === 5) {
+            statement = `SELECT
+            jcenters__request.ID,
+            jcenters__request.type,
+            jcenters__request.jcenter_id,
+            jcenters__request.jcenter_status,
+            jcenters__request.teacher_id,
+            jcenters__request.status,
+            jcenters__info.title AS jcenter_title,
+            CONCAT (teachers__info.f_name,' ',teachers__info.l_name) AS teacher_name,
+            jcenters__request.jcenter_update_time,
+            jcenters__request.update_time,
+            jcenters__request.insert_time
+            FROM jcenters__request
+            INNER JOIN jcenters__info ON jcenters__info.ID = jcenters__request.jcenter_id
+            INNER JOIN teachers__info ON teachers__info.ID = jcenters__request.teacher_id
+            WHERE jcenters__request.status!='Deleted' AND type =?`;
+        }
         if (requestType === 6) {
             statement = `SELECT
             jcenters__request.ID,
@@ -1106,6 +1165,35 @@ user__payback_need.jcenters_id=?`;
                 if (jRequestData.status === 'Confirmed') {
                     statement = `INSERT INTO  jcenters__department_relation (jcenter_id,department_id) VALUES(?,?)`;
                     query = mysql.format(statement, [jRequestData.jcenter_id, jRequestData.req_department_id]);
+                    queryRS = await module.exports.dbQuery_promise(query);
+                }
+                return queryRS.affectedRows;
+            } else {
+                return -1;
+            }
+        } else {
+            statement = `INSERT INTO  jcenters__request (type,jcenter_id,req_department_id,jcenter_status) VALUES(?,?,?,?)`;
+            query = mysql.format(statement, [jRequestType, jRequestData.jcenter_id, jRequestData.req_department_id, jRequestData.jcenter_status]);
+            queryRS = await module.exports.dbQuery_promise(query);
+            if (queryRS.insertId > 0) {
+                return queryRS.insertId;
+            } else {
+                return -1;
+            }
+        }
+
+    },
+    manageJAddTeacherRequest: async (jRequestData, jRequestType, userDataRS) => {
+        let statement, query, queryRS;
+        const currentTime = new Date();
+        if (jRequestData.ID) {
+            statement = `UPDATE jcenters__request SET jcenter_status=?,status=?,` + (parseInt(userDataRS[0]['jcenter_id']) > 0 ? 'jcenter_user_id=?,jcenter_update_time=?' : 'user_id=?,update_time=?') + ` WHERE ID=?`;
+            query = mysql.format(statement, [jRequestData.jcenter_status, jRequestData.status, userDataRS[0]['ID'], currentTime, jRequestData.ID]);
+            queryRS = await module.exports.dbQuery_promise(query);
+            if (queryRS.affectedRows > 0) {
+                if (jRequestData.status === 'Confirmed') {
+                    statement = `INSERT INTO teachers__jcenter_relation (teacher_id,center_id) VALUES(?,?)`;
+                    query = mysql.format(statement, [jRequestData.teacher_id, jRequestData.jcenter_id]);
                     queryRS = await module.exports.dbQuery_promise(query);
                 }
                 return queryRS.affectedRows;

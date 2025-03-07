@@ -72,6 +72,18 @@ const submitEducationGroup = asyncHandler(async (req, res) => {
   }
 });
 
+//@route POST /v1/education/changeEduGroupStatus
+//@access private
+const changeEduGroupStatus = asyncHandler(async (req, res) => {
+  try {
+    const { eduGroupId, targetStatus } = req.body;
+    await educationModel.updateEducationGroupStatus(eduGroupId, targetStatus);
+    res.status(200).json({ message: 'اطلاعات با موفقیت ثبت شد' });
+  } catch (err) {
+    res.status(500).json({ message: 'خطا در بروزرسانی اطلاعات!' });
+  }
+});
+
 //@route POST /v1/education/deleteEducationGroup
 //@access private
 const deleteEducationGroup = asyncHandler(async (req, res) => {
@@ -80,7 +92,7 @@ const deleteEducationGroup = asyncHandler(async (req, res) => {
     educationModel.deleteEducationGroup(req.body.educationGroupId);
     res.status(200).json({ message: 'اطلاعات با موفقیت حذف شد' });
   } catch (err) {
-    res.status(500).json({ message: 'Error in fetching data!' });
+    res.status(500).json({ message: 'خطا در بروزرسانی اطلاعات!' });
   }
 });
 
@@ -148,6 +160,19 @@ const deleteLesson = asyncHandler(async (req, res) => {
   }
 });
 
+//@route POST /v1/education/changeLessonStatus
+//@access private
+const changeLessonStatus = asyncHandler(async (req, res) => {
+  try {
+    const { lessonId, targetStatus } = req.body;
+    await educationModel.updateLessonStatus(lessonId, targetStatus);
+    res.status(200).json({ message: 'اطلاعات با موفقیت ثبت شد' });
+  } catch (err) {
+    res.status(500).json({ message: 'خطا در بروزرسانی اطلاعات!' });
+  }
+});
+
+
 //@route POST /v1/education/getLessonEduGroupRelationData
 //@access private
 const getLessonEduGroupRelationData = asyncHandler(async (req, res) => {
@@ -209,6 +234,45 @@ const getAllJob = asyncHandler(async (req, res) => {
   }
 });
 
+//@desc courseCancelPreSignup
+//@route get /api/v1/education/getWithExamJob
+//@access private
+const getWithExamJob = asyncHandler(async (req, res) => {
+  try {
+    let allJob = await educationModel.getWithExamJob();
+    res.status(200).json({ allJob });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "خطا در دریافت اطلاعات" });
+  }
+});
+//@desc courseCancelPreSignup
+//@route get /api/v1/education/getWithExamLesson
+//@access private
+const getWithExamLesson = asyncHandler(async (req, res) => {
+  try {
+    let allJob = await educationModel.getWithExamLesson();
+    res.status(200).json({ allJob });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "خطا در دریافت اطلاعات" });
+  }
+});
+
+
+//@desc courseCancelPreSignup
+//@route get /api/v1/education/getAllExam
+//@access private
+const getAllExam = asyncHandler(async (req, res) => {
+  try {
+    let examList = await educationModel.getAllExam();
+    res.status(200).json({ examList });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "خطا در دریافت اطلاعات" });
+  }
+});
+
 const getJobType = asyncHandler(async (req, res) => {
   try {
     let JobType = await educationModel.getJobType();
@@ -257,6 +321,18 @@ const submitJobExamRelation = asyncHandler(async (req, res) => {
   }
 });
 
+//@route GET /v1/education/loadExamPlanForCenter
+//@access private
+const loadExamPlanForCenter = asyncHandler(async (req, res) => {
+  try {
+    const userID = req.user.ID;
+    let examPlan = await educationModel.loadExamPlanForCenter(userID);
+    res.status(200).json({ examPlan });
+  } catch (err) {
+    res.status(500).json({ message: 'Error in fetching data!' });
+  }
+});
+
 //@route POST /v1/education/deleteJob
 //@access private
 const deleteJob = asyncHandler(async (req, res) => {
@@ -264,6 +340,19 @@ const deleteJob = asyncHandler(async (req, res) => {
     const userID = req.user.ID;
     educationModel.deleteJob(req.body.JobId);
     res.status(200).json({ message: 'اطلاعات با موفقیت حذف شد' });
+  } catch (err) {
+    res.status(500).json({ message: 'Error in fetching data!' });
+  }
+});
+
+
+//@route POST /v1/education/submitExamPlan
+//@access private
+const submitExamPlan = asyncHandler(async (req, res) => {
+  try {
+    const userID = req.user.ID;
+    let submitPlan = await educationModel.submitExamPlan(req.body.jobExamPlanData , userID);
+    res.status(200).json({ message: 'اطلاعات با موفقیت ثبت شد' });
   } catch (err) {
     res.status(500).json({ message: 'Error in fetching data!' });
   }
@@ -314,7 +403,8 @@ const deleteJobLessonRelation = asyncHandler(async (req, res) => {
 //@access private
 const getAllTeacher = asyncHandler(async (req, res) => {
   try {
-    let allTeacher = await educationModel.loadTeacher();
+    const { jcenterId } = req.body;
+    let allTeacher = await educationModel.loadTeacher(jcenterId);
     res.status(200).json({ allTeacher });
   } catch (err) {
     console.log(err);
@@ -527,7 +617,7 @@ const addTeacherToDb = asyncHandler(async (req, res) => {
   try {
     const userID = req.user.ID;
     let addTeacher = await educationModel.addTeacherInfoToDb(req.body.TeachersData, userID);
-    res.status(200).json({ addTeacher });
+    res.status(200).json({ message:'اطلاعات با موفقیت ذحیره شد' });
   } catch (err) {
     console.log(err);
     res.status(500).json({ message: "خطا در دریافت اطلاعات" });
@@ -1020,7 +1110,7 @@ const submitAddTeacherRequest = asyncHandler(async (req, res) => {
     const userID = req.user.ID;
     const { foundTeacherId , jcenterId } = req.body;
     let serachResult = await educationModel.submitAddTeacherRequest(foundTeacherId , jcenterId);
-    res.status(200).json({ serachResult });
+    res.status(200).json({ message: "درخواست با موفقیت ثبت شد." });
   } catch (err) {
     console.log(err);
     res.status(500).json({ message: "خطا در دریافت اطلاعات" });
@@ -1174,11 +1264,13 @@ module.exports = {
   getMainGroup,
   uploadDocument,
   submitEducationGroup,
+  changeEduGroupStatus,
   deleteEducationGroup,
   getAllLesson,
   getLessonType,
   addLessonInfoToDb,
   deleteLesson,
+  changeLessonStatus,
   getLessonEduGroupRelationData,
   submitLessonEduGroupRel,
   updateLessonEduGroupRelStatus,
@@ -1244,5 +1336,10 @@ module.exports = {
   submitAddTeacherRequest,
   loadAllDepartment,
   loadJobLesson,
-  submitJobExamRelation
+  submitJobExamRelation,
+  loadExamPlanForCenter,
+  submitExamPlan,
+  getWithExamJob,
+  getWithExamLesson,
+  getAllExam
 };

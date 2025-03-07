@@ -10,23 +10,30 @@ router.get("/getMainGroup", educationCtrl.getMainGroup);
 router.post("/uploadDocument", educationCtrl.uploadDocument);
 router.post("/submitEducationGroup", educationCtrl.submitEducationGroup);
 router.post("/deleteEducationGroup", educationCtrl.deleteEducationGroup);
+router.post("/changeEduGroupStatus", educationCtrl.changeEduGroupStatus);
 
 //-------------------------Lesson------------------------------------
 router.get("/getAllLesson", educationCtrl.getAllLesson);
 router.get("/getLessonType", educationCtrl.getLessonType);
 router.post("/submitLesson", educationCtrl.addLessonInfoToDb);
 router.post("/deleteLesson", educationCtrl.deleteLesson);
+router.post("/changeLessonStatus", educationCtrl.changeLessonStatus);
 router.post("/getLessonEduGroupRelationData", educationCtrl.getLessonEduGroupRelationData);
 router.post("/submitLessonEduGroupRel", educationCtrl.submitLessonEduGroupRel);
 router.post("/updateLessonEduGroupRelStatus", educationCtrl.updateLessonEduGroupRelStatus);
 
 //-------------------------Job------------------------------------
 router.get("/getAllJob", educationCtrl.getAllJob);
+router.get("/getWithExamJob", educationCtrl.getWithExamJob);
+router.get("/getWithExamLesson", educationCtrl.getWithExamLesson);
+router.get("/getAllExam", educationCtrl.getAllExam);
 router.get("/getJobType", educationCtrl.getJobType);
 router.post("/submitJob", educationCtrl.addJobInfoToDb);
 router.post("/deleteJob", educationCtrl.deleteJob);
 router.post("/loadJobLesson", educationCtrl.loadJobLesson);
 router.post("/submitJobExamRelation", educationCtrl.submitJobExamRelation);
+router.get("/loadExamPlanForCenter", educationCtrl.loadExamPlanForCenter);
+router.post("/submitExamPlan", educationCtrl.submitExamPlan);
 
 //-------------------------Job Lesson Relation------------------------------------
 router.get("/getAllJobLesson", educationCtrl.getAllJobLesson);
@@ -35,7 +42,7 @@ router.post("/deleteJobLesson", educationCtrl.deleteJobLessonRelation);
 
 
 //-------------------------Teachers------------------------------------
-router.get("/getAllTeacher", educationCtrl.getAllTeacher);
+router.post("/getAllTeacher", educationCtrl.getAllTeacher);
 router.post("/submitTeachers", educationCtrl.addTeacherToDb);
 router.get("/getAllTeacherDegree", educationCtrl.getTeacherDegree);
 router.get("/getAllTeacherJob", educationCtrl.getTeacherJob);

@@ -100,9 +100,17 @@ WHERE classes__teacher_relation.classe_id=?`;
         return queryRS;
     },
 
+    updateEducationGroupStatus: async (educationGroupID, targetStatus) => {
+        let statement, query, queryRS;
+        statement = `UPDATE education__group SET status=? WHERE ID=?`;
+        query = mysql.format(statement, [targetStatus, educationGroupID]);
+        queryRS = await module.exports.dbQuery_promise(query);
+        return queryRS;
+    },
+
     deleteEducationGroup: async (educationGroupID) => {
         let statement, query, queryRS;
-        statement = `DELETE FROM education__group WHERE ID=?`;
+        statement = `UPDATE education__group SET status='Inactive' WHERE ID=?`;
         query = mysql.format(statement, [educationGroupID]);
         queryRS = await module.exports.dbQuery_promise(query);
         return queryRS;
@@ -136,6 +144,7 @@ WHERE classes__teacher_relation.classe_id=?`;
             statement = `INSERT INTO lesson__info(title, lesson_type_id, image_url, image_alt_text, description,creator_user_id) VALUES (?,?,?,?,?,?)`;
         }
         query = mysql.format(statement, [queryBody.title, queryBody.lesson_type_id, queryBody.image_url, queryBody.image_alt_text, queryBody.description, userID, queryBody.ID]);
+        console.log(query);
         queryRS = await module.exports.dbQuery_promise(query);
         return queryRS;
     },
@@ -147,6 +156,15 @@ WHERE classes__teacher_relation.classe_id=?`;
         queryRS = await module.exports.dbQuery_promise(query);
         return queryRS;
     },
+
+    updateLessonStatus: async (lessonId, targetStatus) => {
+        let statement, query, queryRS;
+        statement = `UPDATE lesson__info SET status=? WHERE ID=?`;
+        query = mysql.format(statement, [targetStatus, lessonId]);
+        queryRS = await module.exports.dbQuery_promise(query);
+        return queryRS;
+    },
+
 
     getLessonEduGroupRelationData: async (lessonId) => {
         let statement, query, queryRS;
@@ -210,6 +228,50 @@ WHERE classes__teacher_relation.classe_id=?`;
         queryRS = await module.exports.dbQuery_promise(query);
         return queryRS;
     },
+    getWithExamJob: async () => {
+        let statement, query, queryRS;
+        statement = `SELECT * FROM job__info WHERE active_exam="Active"`;
+        query = mysql.format(statement, [0]);
+        queryRS = await module.exports.dbQuery_promise(query);
+        return queryRS;
+    },
+    getWithExamLesson: async () => {
+        let statement, query, queryRS;
+        statement = `SELECT * FROM lesson__info WHERE active_exam="Active"`;
+        query = mysql.format(statement, [0]);
+        queryRS = await module.exports.dbQuery_promise(query);
+        return queryRS;
+    },
+    getAllExam: async () => {
+        let statement, query, queryRS, returnRs;
+        statement = `SELECT 
+job__info.title,
+job__info.image_url,
+GROUP_CONCAT(lesson__info.title) AS lesson_list,
+COUNT(job__lesson_relation.ID) AS lesson_num,
+COUNT(job__lesson_relation.ID) * 30 AS duration
+FROM 
+job__info 
+INNER JOIN job__lesson_relation ON job__info.ID = job__lesson_relation.job_id
+INNER JOIN lesson__info ON lesson__info.ID = job__lesson_relation.lesson_id
+WHERE 
+job__info.active_exam="Active" 
+GROUP BY job__lesson_relation.job_id`;
+        query = mysql.format(statement, [0]);
+        returnRs = await module.exports.dbQuery_promise(query);
+        statement = `SELECT 
+        lesson__info.title,
+        lesson__info.image_url,
+        '' AS leeson_list,
+        1 AS lesson_num,
+        lesson__info.title AS lesson_list,
+        30 AS  duration
+        FROM lesson__info WHERE active_exam="Active"`;
+        query = mysql.format(statement, [0]);
+        queryRS = await module.exports.dbQuery_promise(query);
+        returnRs.push(...queryRS);
+        return returnRs;
+    },
     getJobType: async () => {
         let statement, query, queryRS;
         statement = `SELECT * FROM job__type`;
@@ -219,12 +281,31 @@ WHERE classes__teacher_relation.classe_id=?`;
     },
     submitJobExamRelation: async (jobExamRelation) => {
         let statement, query, queryRS;
-        for(let i=0; i<jobExamRelation.length; i++){
+        for (let i = 0; i < jobExamRelation.length; i++) {
             statement = `UPDATE job__lesson_relation SET question_num=?,rate =? WHERE ID=?`;
-            query = mysql.format(statement, [jobExamRelation[i]['question_num'],jobExamRelation[i]['rate'],jobExamRelation[i]['ID']]);
+            query = mysql.format(statement, [jobExamRelation[i]['question_num'], jobExamRelation[i]['rate'], jobExamRelation[i]['ID']]);
             queryRS = await module.exports.dbQuery_promise(query);
         }
         return queryRS;
+    },
+    loadExamPlanForCenter: async (centerId) => {
+        let statement, query, queryRS;
+        statement = `SELECT * FROM job__exam_plan WHERE center_id=?`;
+        query = mysql.format(statement, [centerId]);
+        queryRS = await module.exports.dbQuery_promise(query);
+        return queryRS;
+    },
+    submitExamPlan: async (queryBody, userID) => {
+        let statement, query, queryRS;
+        if (queryBody.ID) {
+            statement = 'UPDATE job__exam_plan SET center_id=? ,day_id=?, `from`=?, `to`=? , capacity=? WHERE ID=?';
+        } else {
+            statement = 'INSERT INTO job__exam_plan(center_id, day_id, `from`, `to`,capacity) VALUES (?,?,?,?,?)';
+        }
+        query = mysql.format(statement, [userID, queryBody.day_id, module.exports.formatDateTime(queryBody.from, 'Time'), module.exports.formatDateTime(queryBody.to, 'Time'), queryBody.capacity, queryBody.ID]);
+        console.log(query)
+        queryRS = await module.exports.dbQuery_promise(query);
+        return queryRS;;
     },
     loadLessonForJob: async (jobId) => {
         let statement, query, queryRS;
@@ -312,7 +393,7 @@ job__lesson_relation.job_id = ?`;
         return queryRS;
     },
 
-    loadTeacher: async () => {
+    loadTeacher: async (jcenterId) => {
         let statement, query, queryRS;
         statement = `
             SELECT 
@@ -324,9 +405,11 @@ job__lesson_relation.job_id = ?`;
             FROM teachers__info
             INNER JOIN teachers__degree ON teachers__info.degree_id = teachers__degree.ID
             INNER JOIN teachers__job ON teachers__info.job_id = teachers__job.ID
-            INNER JOIN jcenters__info ON teachers__info.jcenters_id = jcenters__info.ID
+            INNER JOIN teachers__jcenter_relation ON teachers__jcenter_relation.teacher_id=teachers__info.ID
+            INNER JOIN jcenters__info ON teachers__jcenter_relation.center_id = jcenters__info.ID
+            WHERE teachers__jcenter_relation.center_id=?
         `;
-        query = mysql.format(statement, [0]);
+        query = mysql.format(statement, [jcenterId]);
         queryRS = await module.exports.dbQuery_promise(query);
         return queryRS;
     },
@@ -428,16 +511,19 @@ WHERE lesson__eduGroup_relation.education_group_id = ?`;
         let statement, query, queryRS, userRs, addUserResult;
         let newUser = false;
         if (queryBody.ID) {
-            statement = `UPDATE teachers__info SET f_name=?, l_name=?, father_name=?, gender=?, national_code=?, mobile=?, mobile2=?, email=?, image_url=?, place_of_birth=?, birthday=?, is_foreigner=?, job_id=?, degree_id=?, biography=?, user_name=?, password=?, postal_address=?, insurance_code=?, sheba=?, bank_acount=?,department_id=?,editor_user_id=?,jcenters_id=? WHERE ID=?`;
+            statement = `UPDATE teachers__info SET f_name=?, l_name=?, father_name=?, gender=?, national_code=?, mobile=?, mobile2=?, email=?, image_url=?, place_of_birth=?, birthday=?, is_foreigner=?, job_id=?, degree_id=?, biography=?, postal_address=?, insurance_code=?, sheba=?, bank_acount=?,department_id=?,editor_user_id=? WHERE ID=?`;
         } else {
-            statement = `INSERT INTO teachers__info(f_name, l_name, father_name, gender, national_code, mobile, mobile2, email, image_url, place_of_birth, birthday, is_foreigner, job_id, degree_id, biography, user_name, password, postal_address, insurance_code, sheba, bank_acount,department_id,creator_user_id,jcenters_id) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`;
+            statement = `INSERT INTO teachers__info(f_name, l_name, father_name, gender, national_code, mobile, mobile2, email, image_url, place_of_birth, birthday, is_foreigner, job_id, degree_id, biography, postal_address, insurance_code, sheba, bank_acount,department_id,creator_user_id) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`;
             newUser = true;
         }
-        query = mysql.format(statement, [queryBody.f_name, queryBody.l_name, queryBody.father_name, queryBody.gender, queryBody.national_code, queryBody.mobile, queryBody.mobile2, queryBody.email, queryBody.image_url, queryBody.place_of_birth, queryBody.birthday, queryBody.is_foreigner, queryBody.job_id, queryBody.degree_id, queryBody.biography, queryBody.user_name, queryBody.password, queryBody.postal_address, queryBody.insurance_code, queryBody.sheba, queryBody.bank_acount, queryBody.department_id, userID, queryBody.jcenters_id, queryBody.ID]);
+        query = mysql.format(statement, [queryBody.f_name, queryBody.l_name, queryBody.father_name, queryBody.gender, queryBody.national_code, queryBody.mobile, queryBody.mobile2, queryBody.email, queryBody.image_url, queryBody.place_of_birth, queryBody.birthday, queryBody.is_foreigner, queryBody.job_id, queryBody.degree_id, queryBody.biography, queryBody.postal_address, queryBody.insurance_code, queryBody.sheba, queryBody.bank_acount, queryBody.department_id, userID, queryBody.ID]);
         queryRS = await module.exports.dbQuery_promise(query);
         if (newUser && queryRS.insertId) {
             let teacherId = queryRS.insertId
-            let hashedPassword = await bcrypt.hash(queryBody.password, 10);
+            statement = `INSERT INTO teachers__jcenter_relation(teacher_id,center_id) VALUES (?,?)`;
+            query = mysql.format(statement, [teacherId, queryBody.jcenters_id]);
+            await module.exports.dbQuery_promise(query);
+            let hashedPassword = await bcrypt.hash(queryBody.mobile, 10);
             let sqlInsert = "INSERT INTO user__info(code,fname,lname,mobile,password,permission) VALUES (?,?,?,?,?,?)";
             let insert_query = mysql.format(sqlInsert, ['T' + teacherId, queryBody.f_name, queryBody.l_name, queryBody.mobile, hashedPassword, 8]);
             userRs = await module.exports.dbQuery_promise(insert_query);
@@ -447,7 +533,7 @@ WHERE lesson__eduGroup_relation.education_group_id = ?`;
             userRs = await module.exports.dbQuery_promise(insert_theme_query);
 
 
-            let sqlUpdate = "UPDATE teachers__info user_id=? SET WHERE ID=?";
+            let sqlUpdate = "UPDATE teachers__info SET user_id=? WHERE ID=?";
             let update_query = mysql.format(sqlUpdate, [userRs.insertId, teacherId]);
             userRs = await module.exports.dbQuery_promise(update_query);
         } else {
@@ -696,11 +782,11 @@ FROM
 classes__delivery_relation 
 INNER JOIN classes__delivery_type ON classes__delivery_relation.delivery_id = classes__delivery_type.ID
 WHERE 
-classe_id = `+classId+`
+classe_id = `+ classId + `
 GROUP BY classe_id`);
             let deliverText = queryRS[0]['Delivery_Text'];
             statement = 'UPDATE classes__info SET delivery_text=? WHERE ID=?';
-            query = mysql.format(statement, [deliverText ,classId]);
+            query = mysql.format(statement, [deliverText, classId]);
             queryRS = await module.exports.dbQuery_promise(query);
         }
 
@@ -959,7 +1045,10 @@ teachers__info.user_id =?`;
     submitAddTeacherRequest: async (foundTeacherId, jcenterId) => {
         let statement, query, queryRS;
         statement = `INSERT INTO jcenters__teacher_add_request(jcenters_id, teacher_id) VALUES (?,?)`;
-        query = mysql.format(statement, [foundTeacherId, jcenterId]);
+        query = mysql.format(statement, [jcenterId,foundTeacherId]);
+        queryRS = await module.exports.dbQuery_promise(query);
+        statement = `INSERT INTO  jcenters__request (type,jcenter_id,teacher_id,jcenter_status) VALUES(?,?,?,?)`;
+        query = mysql.format(statement, [5,jcenterId,foundTeacherId,'Confirmed']);
         queryRS = await module.exports.dbQuery_promise(query);
         if (queryRS.length > 0) {
             return queryRS;
