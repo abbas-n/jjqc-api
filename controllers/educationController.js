@@ -17,7 +17,6 @@ const getAllEducationGroup = asyncHandler(async (req, res) => {
     let allEducationGroup = await educationModel.loadEducationGroup(0);
     res.status(200).json({ allEducationGroup });
   } catch (err) {
-    console.log(err);
     res.status(500).json({ message: "خطا در دریافت اطلاعات" });
   }
 });
@@ -27,7 +26,6 @@ const getMainGroup = asyncHandler(async (req, res) => {
     let mainGroup = await educationModel.getMainGroup();
     res.status(200).json({ mainGroup });
   } catch (err) {
-    console.log(err);
     res.status(500).json({ message: "خطا در دریافت اطلاعات" });
   }
 });
@@ -67,7 +65,6 @@ const submitEducationGroup = asyncHandler(async (req, res) => {
 
     res.status(200).json({ message: 'اطلاعات با موفقیت ثبت شد' });
   } catch (err) {
-    console.log(err);
     res.status(500).json({ message: 'خطا در انجام عملیات' });
   }
 });
@@ -117,7 +114,6 @@ const getAllLesson = asyncHandler(async (req, res) => {
     let allLesson = await educationModel.loadLesson(0);
     res.status(200).json({ allLesson });
   } catch (err) {
-    console.log(err);
     res.status(500).json({ message: "خطا در دریافت اطلاعات" });
   }
 });
@@ -127,7 +123,6 @@ const getLessonType = asyncHandler(async (req, res) => {
     let lessonType = await educationModel.getLeesonType();
     res.status(200).json({ lessonType });
   } catch (err) {
-    console.log(err);
     res.status(500).json({ message: "خطا در دریافت اطلاعات" });
   }
 });
@@ -143,7 +138,6 @@ const addLessonInfoToDb = asyncHandler(async (req, res) => {
     }
     res.status(200).json({ message: 'اطلاعات با موفقیت ثبت شد' });
   } catch (err) {
-    console.log(err);
     res.status(500).json({ message: 'خطا در انجام عملیات!' });
   }
 });
@@ -202,7 +196,6 @@ const submitLessonEduGroupRel = asyncHandler(async (req, res) => {
       res.status(400).json({ message: 'خطا در ثبت اطلاعات' });
     }
   } catch (err) {
-    console.log(err);
     res.status(500).json({ message: 'خطا در ثبت اطلاعات' });
   }
 });
@@ -229,7 +222,6 @@ const getAllJob = asyncHandler(async (req, res) => {
     let allJob = await educationModel.loadJob(0);
     res.status(200).json({ allJob });
   } catch (err) {
-    console.log(err);
     res.status(500).json({ message: "خطا در دریافت اطلاعات" });
   }
 });
@@ -242,7 +234,6 @@ const getWithExamJob = asyncHandler(async (req, res) => {
     let allJob = await educationModel.getWithExamJob();
     res.status(200).json({ allJob });
   } catch (err) {
-    console.log(err);
     res.status(500).json({ message: "خطا در دریافت اطلاعات" });
   }
 });
@@ -254,7 +245,6 @@ const getWithExamLesson = asyncHandler(async (req, res) => {
     let allJob = await educationModel.getWithExamLesson();
     res.status(200).json({ allJob });
   } catch (err) {
-    console.log(err);
     res.status(500).json({ message: "خطا در دریافت اطلاعات" });
   }
 });
@@ -265,10 +255,11 @@ const getWithExamLesson = asyncHandler(async (req, res) => {
 //@access private
 const getAllExam = asyncHandler(async (req, res) => {
   try {
-    let examList = await educationModel.getAllExam();
+    const userID = req.user.ID;
+    const { mood } = req.body;
+    let examList = await educationModel.getAllExam(userID , mood);
     res.status(200).json({ examList });
   } catch (err) {
-    console.log(err);
     res.status(500).json({ message: "خطا در دریافت اطلاعات" });
   }
 });
@@ -278,7 +269,6 @@ const getJobType = asyncHandler(async (req, res) => {
     let JobType = await educationModel.getJobType();
     res.status(200).json({ JobType });
   } catch (err) {
-    console.log(err);
     res.status(500).json({ message: "خطا در دریافت اطلاعات" });
   }
 });
@@ -351,7 +341,7 @@ const deleteJob = asyncHandler(async (req, res) => {
 const submitExamPlan = asyncHandler(async (req, res) => {
   try {
     const userID = req.user.ID;
-    let submitPlan = await educationModel.submitExamPlan(req.body.jobExamPlanData , userID);
+    let submitPlan = await educationModel.submitExamPlan(req.body.jobExamPlanData, userID);
     res.status(200).json({ message: 'اطلاعات با موفقیت ثبت شد' });
   } catch (err) {
     res.status(500).json({ message: 'Error in fetching data!' });
@@ -367,7 +357,6 @@ const getAllJobLesson = asyncHandler(async (req, res) => {
     let allJobLesson = await educationModel.loadJobLesson(0);
     res.status(200).json({ allJobLesson });
   } catch (err) {
-    console.log(err);
     res.status(500).json({ message: "خطا در دریافت اطلاعات" });
   }
 });
@@ -381,7 +370,6 @@ const addJobLessonRelationToDb = asyncHandler(async (req, res) => {
     let addRelation = await educationModel.addJobLessonRelationToDb(req.body.jobLessonData, userID);
     res.status(200).json({ addRelation });
   } catch (err) {
-    console.log(err);
     res.status(500).json({ message: "خطا در دریافت اطلاعات" });
   }
 });
@@ -407,7 +395,6 @@ const getAllTeacher = asyncHandler(async (req, res) => {
     let allTeacher = await educationModel.loadTeacher(jcenterId);
     res.status(200).json({ allTeacher });
   } catch (err) {
-    console.log(err);
     res.status(500).json({ message: "خطا در دریافت اطلاعات" });
   }
 });
@@ -419,7 +406,6 @@ const getAllJCenter = asyncHandler(async (req, res) => {
     let allJCenter = await educationModel.loadJcenter();
     res.status(200).json({ allJCenter });
   } catch (err) {
-    console.log(err);
     res.status(500).json({ message: "خطا در دریافت اطلاعات" });
   }
 });
@@ -431,7 +417,6 @@ const getTeacherDegree = asyncHandler(async (req, res) => {
     let teacherDegree = await educationModel.loadTeacherDegree();
     res.status(200).json({ teacherDegree });
   } catch (err) {
-    console.log(err);
     res.status(500).json({ message: "خطا در دریافت اطلاعات" });
   }
 });
@@ -443,7 +428,6 @@ const getTeacherJob = asyncHandler(async (req, res) => {
     let teacherJob = await educationModel.loadTeacherJob();
     res.status(200).json({ teacherJob });
   } catch (err) {
-    console.log(err);
     res.status(500).json({ message: "خطا در دریافت اطلاعات" });
   }
 });
@@ -455,7 +439,6 @@ const getTeacherDepartment = asyncHandler(async (req, res) => {
     let teacherDepartment = await educationModel.loadDepartment();
     res.status(200).json({ teacherDepartment });
   } catch (err) {
-    console.log(err);
     res.status(500).json({ message: "خطا در دریافت اطلاعات" });
   }
 });
@@ -468,7 +451,6 @@ const getJcenterEducationGroups = asyncHandler(async (req, res) => {
     let JCEducationGroup = await educationModel.getJcenterEducationGroups(jcenterId);
     res.status(200).json({ JCEducationGroup: JCEducationGroup });
   } catch (err) {
-    console.log(err);
     res.status(500).json({ message: "خطا در دریافت اطلاعات" });
   }
 });
@@ -482,20 +464,18 @@ const getEducationGroupLessonData = asyncHandler(async (req, res) => {
     let eduGroupLessonRS = await educationModel.getEducationGroupLessonData(eduGroupId);
     res.status(200).json({ eduGroupLessonRS: eduGroupLessonRS });
   } catch (err) {
-    console.log(err);
     res.status(500).json({ message: "خطا در دریافت اطلاعات" });
   }
 });
 
-//@route Get /v1/education/getLessonTeacherData
+//@route Get /v1/education/getClassTeacherData
 //@access private
-const getLessonTeacherData = asyncHandler(async (req, res) => {
+const getClassTeacherData = asyncHandler(async (req, res) => {
   try {
     const { classId } = req.body;
-    let relRS = await educationModel.getLessonTeacherData(classId);
+    let relRS = await educationModel.getClassTeacherData(classId);
     res.status(200).json({ relRS: relRS });
   } catch (err) {
-    console.log(err);
     res.status(500).json({ message: "خطا در دریافت اطلاعات" });
   }
 });
@@ -509,7 +489,6 @@ const handleEnterMoodle = asyncHandler(async (req, res) => {
     let moodUrl = await moodleOBJ.manageUserLoginRedirect(userData[0]['mobile'], userData[0]['mobile']);
     res.status(200).json({ moodUrl: moodUrl });
   } catch (err) {
-    console.log(err);
     res.status(500).json({ message: "خطا در دریافت اطلاعات" });
   }
 });
@@ -534,14 +513,14 @@ const handleEnterOnlineClass = asyncHandler(async (req, res) => {
         let folderScoId = await adobeOBJ.getScos('content');
         let adobe_dir_sco_id = await adobeOBJ.createFolder(classData[0]['title'], folderScoId);
         statement = `UPDATE classes__info SET adobe_dir_sco_id=? WHERE ID=?`;
-        query = mysql.format(statement, [adobe_dir_sco_id, 1]);
+        query = mysql.format(statement, [adobe_dir_sco_id, classId]);
         await educationModel.dbQuery_promise(query);
         classData[0]['adobe_dir_sco_id'] = adobe_dir_sco_id;
       }
       if (classData[0]['adobe_meeting_url'] === null) {
         let adobeRS = await adobeOBJ.createMeetingInFolder(classData[0]['title'], 'test' + classData[0]['code'], classData[0]['adobe_dir_sco_id']);
         statement = `UPDATE classes__info SET adobe_meeting_url=? , adobe_meeting_sco=? WHERE ID=?`;
-        query = mysql.format(statement, [adobeRS["url-path"], adobeRS["sco-id"], 1]);
+        query = mysql.format(statement, [adobeRS["url-path"], adobeRS["sco-id"], classId]);
         await educationModel.dbQuery_promise(query);
         classData[0]['adobe_meeting_sco'] = adobeRS["sco-id"];
         classData[0]['adobe_meeting_url'] = adobeRS["url-path"];
@@ -562,7 +541,6 @@ const handleEnterOnlineClass = asyncHandler(async (req, res) => {
     res.status(200).json({ meetingURL: meetingURL });
 
   } catch (err) {
-    console.log(err);
     res.status(500).json({ message: "خطا در دریافت اطلاعات" });
   }
 });
@@ -588,7 +566,6 @@ const getMeetingRecordings = asyncHandler(async (req, res) => {
       res.status(200).json({ 'message': 'اطلاعات جلسات دریافت شده است' });
     }
   } catch (err) {
-    console.log(err);
     res.status(500).json({ message: "خطا در دریافت اطلاعات" });
   }
 });
@@ -605,7 +582,6 @@ const playRecordedSessionVideo = asyncHandler(async (req, res) => {
     // await adobeOBJ.loginToAdobeAsAdmin();
     res.status(200).json({ meetingURL: sessionData[0]['adobe_meeting_url'] });
   } catch (err) {
-    console.log(err);
     res.status(500).json({ message: "خطا در دریافت اطلاعات" });
   }
 });
@@ -617,9 +593,8 @@ const addTeacherToDb = asyncHandler(async (req, res) => {
   try {
     const userID = req.user.ID;
     let addTeacher = await educationModel.addTeacherInfoToDb(req.body.TeachersData, userID);
-    res.status(200).json({ message:'اطلاعات با موفقیت ذحیره شد' });
+    res.status(200).json({ message: 'اطلاعات با موفقیت ذحیره شد' });
   } catch (err) {
-    console.log(err);
     res.status(500).json({ message: "خطا در دریافت اطلاعات" });
   }
 });
@@ -708,7 +683,6 @@ const submitClassTeacherRel = asyncHandler(async (req, res) => {
       res.status(400).json({ message: 'خطا در ثبت اطلاعات' });
     }
   } catch (err) {
-    console.log(err);
     res.status(500).json({ message: 'خطا در ثبت اطلاعات' });
   }
 });
@@ -731,10 +705,11 @@ const updateTeacherLessonRelStatus = asyncHandler(async (req, res) => {
 //@access private
 const getLessonTeacher = asyncHandler(async (req, res) => {
   try {
-    const { lessonId } = req.body;
-    let lessonTeacher = await educationModel.loadLessonTeacher(lessonId);
+    const { lessonId, jcenterId } = req.body;
+    let lessonTeacher = await educationModel.loadLessonTeacher(lessonId, jcenterId);
     res.status(200).json({ lessonTeacher });
   } catch (err) {
+    // console.log(err)
     res.status(500).json({ message: 'Error in fetching data!' });
   }
 });
@@ -799,7 +774,7 @@ const getAllClasses = asyncHandler(async (req, res) => {
     let allClasses = await educationModel.loadClasses(jcenter_id);
     res.status(200).json({ allClasses });
   } catch (err) {
-    console.log(err);
+    // console.log(err);
     res.status(500).json({ message: "خطا در دریافت اطلاعات" });
   }
 });
@@ -811,7 +786,7 @@ const getClassesDelivery = asyncHandler(async (req, res) => {
     let classeDelivery = await educationModel.loadDeliveryType();
     res.status(200).json({ classeDelivery });
   } catch (err) {
-    console.log(err);
+    // console.log(err);
     res.status(500).json({ message: "خطا در دریافت اطلاعات" });
   }
 });
@@ -823,7 +798,6 @@ const getClassesType = asyncHandler(async (req, res) => {
     let classeType = await educationModel.loadClassType();
     res.status(200).json({ classeType });
   } catch (err) {
-    console.log(err);
     res.status(500).json({ message: "خطا در دریافت اطلاعات" });
   }
 });
@@ -848,7 +822,6 @@ const addClassInfoToDb = asyncHandler(async (req, res) => {
     }
     res.status(200).json({ classRS });
   } catch (err) {
-    console.error(err);
     res.status(500).json({ message: "خطا در دریافت اطلاعات" });
   }
 });
@@ -873,7 +846,6 @@ const getEducationGroupForClass = asyncHandler(async (req, res) => {
     let educationGroup = await educationModel.loadClassEducationGroup(jCenter, departmentId);
     res.status(200).json({ educationGroup });
   } catch (err) {
-    console.log(err);
     res.status(500).json({ message: "خطا در دریافت اطلاعات" });
   }
 });
@@ -886,7 +858,6 @@ const getEducationDepartmentForClass = asyncHandler(async (req, res) => {
     let classDepartment = await educationModel.loadClassDepartMent(jCenter);
     res.status(200).json({ classDepartment });
   } catch (err) {
-    console.log(err);
     res.status(500).json({ message: "خطا در دریافت اطلاعات" });
   }
 });
@@ -899,7 +870,6 @@ const getClassLesson = asyncHandler(async (req, res) => {
     let classDepartment = await educationModel.getClassLesson(groupId);
     res.status(200).json({ classDepartment });
   } catch (err) {
-    console.log(err);
     res.status(500).json({ message: "خطا در دریافت اطلاعات" });
   }
 });
@@ -911,7 +881,6 @@ const getCertificateInfo = asyncHandler(async (req, res) => {
     let allCertificate = await educationModel.loadCertificateInfo();
     res.status(200).json({ allCertificate });
   } catch (err) {
-    console.log(err);
     res.status(500).json({ message: "خطا در دریافت اطلاعات" });
   }
 });
@@ -923,7 +892,6 @@ const getCertificateStructure = asyncHandler(async (req, res) => {
     let certificateStructure = await educationModel.loadCertificateStructure();
     res.status(200).json({ certificateStructure });
   } catch (err) {
-    console.log(err);
     res.status(500).json({ message: "خطا در دریافت اطلاعات" });
   }
 });
@@ -937,7 +905,6 @@ const getmemberInfo = asyncHandler(async (req, res) => {
     let memberInfo = await educationModel.getmemberInfo(userID);
     res.status(200).json({ memberInfo });
   } catch (err) {
-    console.log(err);
     res.status(500).json({ message: "خطا در دریافت اطلاعات" });
   }
 });
@@ -950,7 +917,6 @@ const getTeacherInfo = asyncHandler(async (req, res) => {
     let teacherInfo = await educationModel.getTeacherInfo(userID);
     res.status(200).json({ teacherInfo });
   } catch (err) {
-    console.log(err);
     res.status(500).json({ message: "خطا در دریافت اطلاعات" });
   }
 });
@@ -963,7 +929,6 @@ const getTeacherWeeklySchedule = asyncHandler(async (req, res) => {
     let weeklySchedule = await educationModel.getTeacherWeeklySchedule(userID);
     res.status(200).json({ weeklySchedule });
   } catch (err) {
-    console.log(err);
     res.status(500).json({ message: "خطا در دریافت اطلاعات" });
   }
 });
@@ -976,7 +941,6 @@ const getTeacherCenter = asyncHandler(async (req, res) => {
     let teacherCenter = await educationModel.getTeacherCenter(userID);
     res.status(200).json({ teacherCenter });
   } catch (err) {
-    console.log(err);
     res.status(500).json({ message: "خطا در دریافت اطلاعات" });
   }
 });
@@ -990,7 +954,6 @@ const getTeacherClass = asyncHandler(async (req, res) => {
     let teacherClasess = await educationModel.getTeacherClass(classType, userID);
     res.status(200).json({ teacherClasess });
   } catch (err) {
-    console.log(err);
     res.status(500).json({ message: "خطا در دریافت اطلاعات" });
   }
 });
@@ -1003,7 +966,6 @@ const submitMember = asyncHandler(async (req, res) => {
     let addTeacher = await educationModel.submitMemberInfoToDb(req.body.membersData, userID);
     res.status(200).json({ 'message': 'اطلاعات با موفقیت ثبت شد' });
   } catch (err) {
-    console.log(err);
     res.status(500).json({ message: "خطا در دریافت اطلاعات" });
   }
 });
@@ -1017,13 +979,12 @@ const getClassListForMembers = asyncHandler(async (req, res) => {
     const userID = req.user.ID;
     let membersClass;
     if (listMood === 'Active') {
-      membersClass = await educationModel.getActiveClasses(0 , userID);
+      membersClass = await educationModel.getActiveClasses(0, userID);
     } else {
       membersClass = await educationModel.loadClassListForMember(listMood, userID);
     }
     res.status(200).json({ membersClass });
   } catch (err) {
-    console.log(err);
     res.status(500).json({ message: "خطا در دریافت اطلاعات" });
   }
 });
@@ -1044,7 +1005,25 @@ const addClassToUserCart = asyncHandler(async (req, res) => {
       res.status(500).json({ message: "خطا در ثبت اطلاعات" });
     }
   } catch (err) {
-    console.log(err);
+    res.status(500).json({ message: "خطا در ثبت اطلاعات" });
+  }
+});
+
+//@route Post /v1/education/addExamToUserCart
+//@access private
+const addExamToUserCart = asyncHandler(async (req, res) => {
+  try {
+    const userID = req.user.ID;
+    const { examItem } = req.body;
+    let addCartRS = await educationModel.addExamToUserCart(userID, examItem.ID, examItem.expense, examItem.Exam_Type);
+    if (addCartRS > 0) {
+      res.status(200).json({ message: 'اطلاعات با موفقیت ثبت شد', addCartRS: addCartRS });
+    } else if (addCartRS === -1) {
+      res.status(500).json({ message: "شما قبلا در این آزمون ثبت نام کرده اید" });
+    } else {
+      res.status(500).json({ message: "خطا در ثبت اطلاعات" });
+    }
+  } catch (err) {
     res.status(500).json({ message: "خطا در ثبت اطلاعات" });
   }
 });
@@ -1057,7 +1036,6 @@ const loadUserCart = asyncHandler(async (req, res) => {
     let cart_item = await educationModel.loadUserCart(userID);
     res.status(200).json({ cart_item });
   } catch (err) {
-    console.log(err);
     res.status(500).json({ message: "خطا در دریافت اطلاعات" });
   }
 });
@@ -1067,10 +1045,9 @@ const loadUserCart = asyncHandler(async (req, res) => {
 const removeFromCart = asyncHandler(async (req, res) => {
   try {
     const userID = req.user.ID;
-    let removeFromCart = await educationModel.removeFromCart(userID, req.body.classId);
+    let removeFromCart = await educationModel.removeFromCart(userID, req.body.classId, req.body.examType);
     res.status(200).json({ removeFromCart });
   } catch (err) {
-    console.log(err);
     res.status(500).json({ message: "خطا در دریافت اطلاعات" });
   }
 });
@@ -1083,7 +1060,6 @@ const addCenterToTeacher = asyncHandler(async (req, res) => {
     let addCenterToTeacher = await educationModel.addCenterToTeacher(userID, req.body.selectedCenterID);
     res.status(200).json({ addCenterToTeacher });
   } catch (err) {
-    console.log(err);
     res.status(500).json({ message: "خطا در دریافت اطلاعات" });
   }
 });
@@ -1097,7 +1073,6 @@ const serachTeacherByNationalCode = asyncHandler(async (req, res) => {
     let serachResult = await educationModel.serachTeacherByNationalCode(teacherNationalCode);
     res.status(200).json({ serachResult });
   } catch (err) {
-    console.log(err);
     res.status(500).json({ message: "خطا در دریافت اطلاعات" });
   }
 });
@@ -1108,11 +1083,10 @@ const serachTeacherByNationalCode = asyncHandler(async (req, res) => {
 const submitAddTeacherRequest = asyncHandler(async (req, res) => {
   try {
     const userID = req.user.ID;
-    const { foundTeacherId , jcenterId } = req.body;
-    let serachResult = await educationModel.submitAddTeacherRequest(foundTeacherId , jcenterId);
+    const { foundTeacherId, jcenterId } = req.body;
+    let serachResult = await educationModel.submitAddTeacherRequest(foundTeacherId, jcenterId);
     res.status(200).json({ message: "درخواست با موفقیت ثبت شد." });
   } catch (err) {
-    console.log(err);
     res.status(500).json({ message: "خطا در دریافت اطلاعات" });
   }
 });
@@ -1126,7 +1100,6 @@ const submitUserCancelRequest = asyncHandler(async (req, res) => {
     let cancelReqRS = await educationModel.submitUserCancelRequest(userID, classId);
     res.status(200).json({ message: 'درخواست با موفقیت ثبت شد' });
   } catch (err) {
-    console.log(err);
     res.status(500).json({ message: "خطا در دریافت اطلاعات" });
   }
 });
@@ -1137,9 +1110,8 @@ const submitUserCancelRequest = asyncHandler(async (req, res) => {
 const loadAllDepartment = asyncHandler(async (req, res) => {
   try {
     let department = await educationModel.loadAllDepartment();
-    res.status(200).json({department});
+    res.status(200).json({ department });
   } catch (err) {
-    console.log(err);
     res.status(500).json({ message: "خطا در دریافت اطلاعات" });
   }
 });
@@ -1149,13 +1121,11 @@ const loadAllDepartment = asyncHandler(async (req, res) => {
 //@access private
 const applyDiscountCode = asyncHandler(async (req, res) => {
   try {
-    console.log(req.body);
     const { ID } = req.body;
     const userID = req.user.ID;
     let removeFromCart = await educationModel.applyDiscountCode(userID, req.body);
     res.status(200).json({ removeFromCart });
   } catch (err) {
-    console.log(err);
     res.status(500).json({ message: "خطا در دریافت اطلاعات" });
   }
 });
@@ -1181,7 +1151,6 @@ const goForCartPayment = asyncHandler(async (req, res) => {
       res.status(404).json({ message: 'لیست کلاس ها خالی است' });
     }
   } catch (err) {
-    console.log(err);
     res.status(500).json({ message: "خطا در ثبت اطلاعات" });
   }
 });
@@ -1198,7 +1167,6 @@ const sendMoodleReq = asyncHandler(async (req, res) => {
     // await moodleOBJ.createUser(userData[0]['ID'], userData[0]['mobile'], userData[0]['fname'], userData[0]['lname'], userData[0]['mobile'] + '@jjqc.ir');
     res.status(200).json({ membersClass });
   } catch (err) {
-    console.log(err);
     res.status(500).json({ message: "خطا در دریافت اطلاعات" });
   }
 });
@@ -1252,8 +1220,6 @@ const sendAdobeReq = asyncHandler(async (req, res) => {
 
     // console.log('adobeRS:' + adobeRS);
   } catch (err) {
-    console.log('eror');
-    console.log(err);
     res.status(500).json({ message: "خطا در ثبت اطلاعات" });
   }
 });
@@ -1313,7 +1279,7 @@ module.exports = {
   submitUserCancelRequest,
   applyDiscountCode,
   goForCartPayment,
-  getLessonTeacherData,
+  getClassTeacherData,
   handleEnterOnlineClass,
   handleEnterMoodle,
   getMeetingRecordings,
@@ -1341,5 +1307,6 @@ module.exports = {
   submitExamPlan,
   getWithExamJob,
   getWithExamLesson,
-  getAllExam
+  getAllExam,
+  addExamToUserCart
 };

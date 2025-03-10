@@ -458,7 +458,7 @@ WHERE jcenters__info.ID = ?`;
         queryRS = await module.exports.dbQuery_promise(query);
         return queryRS;
     },
-    getClassHoldTimeData: async (classId) => {
+    getClassHoldTimeData: async (classId, mood) => {
         let statement, query, queryRS;
         statement = `SELECT
     classes__hold_time.*,
@@ -471,7 +471,7 @@ INNER JOIN jcenters__buildings ON classes__hold_time.buildings_id = jcenters__bu
 INNER JOIN jcenters__building_rooms ON classes__hold_time.room_id = jcenters__building_rooms.ID
 INNER JOIN classes__info ON classes__hold_time.classes_id = classes__info.ID
 WHERE
-    classes__hold_time.classes_id = ?`;
+    classes__hold_time.classes_id = ?`+ (mood === 'All' ? `` : ` AND classes__hold_time.status='Active'`);
         query = mysql.format(statement, [classId]);
         queryRS = await module.exports.dbQuery_promise(query);
         return queryRS;
@@ -659,7 +659,7 @@ WHERE classes__session.classe_id = ?`;
         return { success: true, sessions: result };
     },
 
-    getClassUserList: async (classId, sessionId) => {
+    getClassSessionUserList: async (classId, sessionId) => {
         let statement, query, queryRS;
 
         statement = `INSERT INTO classes__user_session_relation(user_id, classe_id, session_id) 
@@ -683,6 +683,19 @@ WHERE classes__session.classe_id = ?`;
         WHERE 
         classes__user_session_relation.classe_id=? AND classes__user_session_relation.session_id=?`
         query = mysql.format(statement, [classId, sessionId]);
+        queryRS = await module.exports.dbQuery_promise(query);
+        return queryRS;
+    },
+
+    getClassUserList: async (classId) => {
+        let statement, query, queryRS;
+        statement = `SELECT 
+        classes__user_relation.* ,
+        CONCAT(user__info.fname , ' ' , user__info.lname) AS user_full_name
+        FROM classes__user_relation
+        INNER JOIN user__info ON classes__user_relation.user_id = user__info.ID
+        WHERE classes__user_relation.class_id=?`
+        query = mysql.format(statement, [classId]);
         queryRS = await module.exports.dbQuery_promise(query);
         return queryRS;
     },
@@ -836,6 +849,13 @@ user__payback_need.jcenters_id=?`;
             }
         }
     },
+    changeJbuildingStatus: async (jbuildingId, targetStatus) => {
+        let statement, query, queryRS;
+        statement = `UPDATE jcenters__buildings SET status=? WHERE ID=?`;
+        query = mysql.format(statement, [targetStatus, jbuildingId]);
+        queryRS = await module.exports.dbQuery_promise(query);
+        return queryRS;
+    },
     submitOperator: async (operatorData, jcenterId) => {
         let statement, query, queryRS;
         if (operatorData.ID) {
@@ -859,11 +879,17 @@ user__payback_need.jcenters_id=?`;
             }
         }
     },
-    submitBuildingRoomRel: async (buildingId, roomTitle) => {
+    getJRoomsOptions: async () => {
         let statement, query, queryRS;
-        statement = `INSERT INTO  jcenters__building_rooms (building_id,title) VALUES(?,?)`;
-        query = mysql.format(statement,
-            [buildingId, roomTitle]);
+        statement = `SELECT * FROM jcenters__rooms_option WHERE status='Active'`;
+        query = mysql.format(statement);
+        queryRS = await module.exports.dbQuery_promise(query);
+        return queryRS;
+    },
+    submitBuildingRoomRel: async (buildingId, roomTitle, roomOptions) => {
+        let statement, query, queryRS;
+        statement = `INSERT INTO  jcenters__building_rooms (building_id,title,options) VALUES(?,?,?)`;
+        query = mysql.format(statement, [buildingId, roomTitle, roomOptions]);
         queryRS = await module.exports.dbQuery_promise(query);
         if (queryRS.insertId > 0) {
             return queryRS.insertId;
@@ -877,13 +903,31 @@ user__payback_need.jcenters_id=?`;
                 jcenters__building_rooms.ID,
                 jcenters__buildings.title AS Btitle,
                 jcenters__building_rooms.title,
+                jcenters__building_rooms.options,
                 jcenters__building_rooms.status
                 FROM jcenters__building_rooms
                 INNER JOIN jcenters__buildings ON jcenters__buildings.ID = jcenters__building_rooms.building_id
                 WHERE jcenters__building_rooms.building_id=?`;
         query = mysql.format(statement, [buildingId]);
         queryRS = await module.exports.dbQuery_promise(query);
-        return queryRS;
+        const processedResults = queryRS.map(row => {
+            if (row.options != 'null') {
+                const options = JSON.parse(row.options);
+                console.log(options);
+                const labels = options.map(option => option.label).join(', ');
+                return {
+                    ...row,
+                    options: labels
+                };
+            } else {
+                return {
+                    ...row,
+                    options: '---'
+                };
+
+            }
+        });
+        return processedResults;
     },
     updateBuildingRoomRelStatus: async (buildingRoomRelRelId, buildingRoomRelStatus) => {
         let statement, query, queryRS;

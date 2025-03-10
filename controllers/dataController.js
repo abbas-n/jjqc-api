@@ -219,7 +219,7 @@ const getUserResumeData = asyncHandler(async (req, res) => {
     const userResume = await PModel.getUserResumeData(userID);
     res.status(200).json(userResume);
   } catch (err) {
-    console.log(err);
+    // console.log(err);
     res.status(500).json({ message: "خطا در بروزرسانی" });
   }
 });
@@ -235,7 +235,7 @@ const getDashboardData = asyncHandler(async (req, res) => {
     let dashBoardData = await PModel.getDashboardData(userID);
     res.status(200).json({ data: dashBoardData });
   } catch (err) {
-    console.log(err);
+    // console.log(err);
     res.status(500).json({ message: "خطا در ثبت اطلاعات" });
   }
 });
@@ -251,7 +251,7 @@ const submitUserEventsCalendar = asyncHandler(async (req, res) => {
     await PModel.submitUserEventsCalendar(userID, events);
     res.status(200).json({ message: "اطلاعات با موفقیت ثبت شد" });
   } catch (err) {
-    console.log(err);
+    // console.log(err);
     res.status(500).json({ message: "خطا در ثبت اطلاعات" });
   }
 });
@@ -265,7 +265,7 @@ const getUserEventsCalendar = asyncHandler(async (req, res) => {
     let eventsRS = await PModel.getUserEventsCalendar(userID);
     res.status(200).json({ eventsRS });
   } catch (err) {
-    console.log(err);
+    // console.log(err);
     res.status(500).json({ message: "خطا در دریافت اطلاعات" });
   }
 });
@@ -280,7 +280,7 @@ const getCoursesData = asyncHandler(async (req, res) => {
     let userCoursesPreSignup = await PModel.getUserCoursesSignup(userID);
     res.status(200).json({ coursesRS, userCoursesPreSignup });
   } catch (err) {
-    console.log(err);
+    // console.log(err);
     res.status(500).json({ message: "خطا در دریافت اطلاعات" });
   }
 });
@@ -327,7 +327,7 @@ const getJcenterChildCenters = asyncHandler(async (req, res) => {
     let allJcentersData = await PModel.getAllJcentersData(jmainCenterId, centerMood);
     res.status(200).json({ allJcentersData: allJcentersData });
   } catch (err) {
-    console.log(err);
+    // console.log(err);
     res.status(500).json({ message: "خطا در دریافت اطلاعات" });
   }
 });
@@ -343,7 +343,7 @@ const getAllJcentersData = asyncHandler(async (req, res) => {
     let allJcentersData = await PModel.getAllJcentersData(jmainCenterId, centerMood);
     res.status(200).json({ allJcentersData: allJcentersData });
   } catch (err) {
-    console.log(err);
+    // console.log(err);
     res.status(500).json({ message: "خطا در دریافت اطلاعات" });
   }
 });
@@ -367,7 +367,7 @@ const submitJcenter = asyncHandler(async (req, res) => {
       res.status(400).json({ message: 'خطا در ثبت اطلاعات' });
     }
   } catch (err) {
-    console.log(err);
+    // console.log(err);
     res.status(500).json({ message: "خطا در دریافت اطلاعات" });
   }
 });
@@ -380,12 +380,12 @@ const deleteJcenter = asyncHandler(async (req, res) => {
     const { jcenterId } = req.body;
     let deleteRS = await PModel.deleteJcenter(jcenterId);
     if (deleteRS > 0) {
-      res.status(200).json({ message: 'اطلاعات با موفقیت حذف شد' });
+      res.status(200).json({ message: 'اطلاعات با موفقیت ثبت شد' });
     } else {
       res.status(400).json({ message: 'خطا در عملیات' });
     }
   } catch (err) {
-    console.log(err);
+    // console.log(err);
     res.status(500).json({ message: "خطا در دریافت اطلاعات" });
   }
 });
@@ -408,13 +408,13 @@ const resetJcenterPassword = asyncHandler(async (req, res) => {
   try {
     const { jcenterId } = req.body;
     let rs = await PModel.resetJcenterPassword(jcenterId);
-    if(rs===-1){
+    if (rs === -1) {
       res.status(500).json({ message: 'اطلاعات کاربری واحد یافت نشد!' });
-    }else{
+    } else {
       res.status(200).json({ message: 'اطلاعات با موفقیت ثبت شد' });
     }
   } catch (err) {
-    console.log(err);
+    // console.log(err);
     res.status(500).json({ message: 'خطا در بروزرسانی اطلاعات!' });
   }
 });
@@ -447,7 +447,7 @@ const getJCenterWithSubCenters = asyncHandler(async (req, res) => {
     let mergedArray = [...JCenterData, ...JCenterSubCenters];
     res.status(200).json({ JCenterSubCenters: mergedArray });
   } catch (err) {
-    console.log(err);
+    // console.log(err);
     res.status(500).json({ message: "خطا در دریافت اطلاعات" });
   }
 });
@@ -462,7 +462,7 @@ const getAllJbuildingsData = asyncHandler(async (req, res) => {
     let allJbuildingsData = await PModel.getAllJbuildingsData(jcenterId);
     res.status(200).json({ allJbuildingsData: allJbuildingsData });
   } catch (err) {
-    console.log(err);
+    // console.log(err);
     res.status(500).json({ message: "خطا در دریافت اطلاعات" });
   }
 });
@@ -476,7 +476,7 @@ const getAllJbuildingsRoomsData = asyncHandler(async (req, res) => {
     let allJbuildingsRoomsData = await PModel.getAllJbuildingsRoomsData(jcenterId);
     res.status(200).json({ allJbuildingsRoomsData: allJbuildingsRoomsData });
   } catch (err) {
-    console.log(err);
+    // console.log(err);
     res.status(500).json({ message: "خطا در دریافت اطلاعات" });
   }
 });
@@ -490,7 +490,7 @@ const getJbuildingsRoomsData = asyncHandler(async (req, res) => {
     let allJbuildingsRoomsData = await PModel.getAllJbuildingsRoomsData(jcenterId, buildingId);
     res.status(200).json({ allJbuildingsRoomsData: allJbuildingsRoomsData });
   } catch (err) {
-    console.log(err);
+    // console.log(err);
     res.status(500).json({ message: "خطا در دریافت اطلاعات" });
   }
 });
@@ -500,11 +500,11 @@ const getJbuildingsRoomsData = asyncHandler(async (req, res) => {
 //@access private
 const getClassHoldTimeData = asyncHandler(async (req, res) => {
   try {
-    const { classId } = req.body;
-    let classHoldTime = await PModel.getClassHoldTimeData(classId);
+    const { classId, mood } = req.body;
+    let classHoldTime = await PModel.getClassHoldTimeData(classId, mood);
     res.status(200).json({ classHoldTime: classHoldTime });
   } catch (err) {
-    console.log(err);
+    // console.log(err);
     res.status(500).json({ message: "خطا در دریافت اطلاعات" });
   }
 });
@@ -519,7 +519,7 @@ const submitHoldTime = asyncHandler(async (req, res) => {
     let insertResult = await PModel.submitHoldTime(classId, holdTimeData);
     res.status(200).json({ insertResult: insertResult });
   } catch (err) {
-    console.log(err);
+    // console.log(err);
     res.status(500).json({ message: "خطا در دریافت اطلاعات" });
   }
 });
@@ -533,7 +533,7 @@ const submitSession = asyncHandler(async (req, res) => {
     let insertResult = await PModel.submitSession(sessionTitle, sessionHoldTimeID, sessionDate, classId, sessionId);
     res.status(200).json({ insertResult: insertResult });
   } catch (err) {
-    console.log(err);
+    // console.log(err);
     res.status(500).json({ message: "خطا در دریافت اطلاعات" });
   }
 });
@@ -547,7 +547,7 @@ const deleteSession = asyncHandler(async (req, res) => {
     let deleteResult = await PModel.deleteSession(sessionId);
     res.status(200).json({ deleteResult: deleteResult });
   } catch (err) {
-    console.log(err);
+    // console.log(err);
     res.status(500).json({ message: "خطا در دریافت اطلاعات" });
   }
 });
@@ -561,7 +561,7 @@ const deleteAllSession = asyncHandler(async (req, res) => {
     let deleteResult = await PModel.deleteAllSession(classId);
     res.status(200).json({ deleteResult: deleteResult });
   } catch (err) {
-    console.log(err);
+    // console.log(err);
     res.status(500).json({ message: "خطا در دریافت اطلاعات" });
   }
 });
@@ -575,21 +575,34 @@ const autoSessionGenerator = asyncHandler(async (req, res) => {
     let sessionResult = await PModel.autoSessionGenerator(classId);
     res.status(200).json({ sessionResult: sessionResult });
   } catch (err) {
-    console.log(err);
+    // console.log(err);
     res.status(500).json({ message: "خطا در دریافت اطلاعات" });
   }
 });
 
-//@desc get jahad center buildings
+//@desc get class session users
+//@route get /api/v1/data/getClassSessionUserList
+//@access private
+const getClassSessionUserList = asyncHandler(async (req, res) => {
+  try {
+    const { classId, sessionId } = req.body;
+    let classUserList = await PModel.getClassSessionUserList(classId, sessionId);
+    res.status(200).json({ classUserList: classUserList });
+  } catch (err) {
+    res.status(500).json({ message: "خطا در دریافت اطلاعات" });
+  }
+});
+
+//@desc get class registered users
 //@route get /api/v1/data/getClassUserList
 //@access private
 const getClassUserList = asyncHandler(async (req, res) => {
   try {
-    const { classId, sessionId } = req.body;
-    let classUserList = await PModel.getClassUserList(classId, sessionId);
+    const { classId } = req.body;
+    let classUserList = await PModel.getClassUserList(classId);
     res.status(200).json({ classUserList: classUserList });
   } catch (err) {
-    console.log(err);
+    // console.log(err);
     res.status(500).json({ message: "خطا در دریافت اطلاعات" });
   }
 });
@@ -603,7 +616,7 @@ const getClassCancelationUserList = asyncHandler(async (req, res) => {
     let classUserList = await PModel.getClassCancelationUserList(classId);
     res.status(200).json({ classUserList: classUserList });
   } catch (err) {
-    console.log(err);
+    // console.log(err);
     res.status(500).json({ message: "خطا در دریافت اطلاعات" });
   }
 });
@@ -617,7 +630,7 @@ const changeUserSessionStatus = asyncHandler(async (req, res) => {
     let classUserList = await PModel.changeUserSessionStatus(userSessionId, targetStatus);
     res.status(200).json({ classUserList: classUserList });
   } catch (err) {
-    console.log(err);
+    // console.log(err);
     res.status(500).json({ message: "خطا در دریافت اطلاعات" });
   }
 });
@@ -632,7 +645,7 @@ const acceptCancelRequest = asyncHandler(async (req, res) => {
     let acceptRequest = await PModel.acceptCancelRequest(requestId, jcenterId, userID);
     res.status(200).json({ acceptRequest: acceptRequest });
   } catch (err) {
-    console.log(err);
+    // console.log(err);
     res.status(500).json({ message: "خطا در دریافت اطلاعات" });
   }
 });
@@ -646,7 +659,7 @@ const getPayBackData = asyncHandler(async (req, res) => {
     let payBackData = await PModel.getPayBackData(jcenterId);
     res.status(200).json({ payBackData: payBackData });
   } catch (err) {
-    console.log(err);
+    // console.log(err);
     res.status(500).json({ message: "خطا در دریافت اطلاعات" });
   }
 });
@@ -659,7 +672,7 @@ const acceptPayBack = asyncHandler(async (req, res) => {
     let acceptRequest = await PModel.acceptPayBack(requestId);
     res.status(200).json({ acceptRequest: acceptRequest });
   } catch (err) {
-    console.log(err);
+    // console.log(err);
     res.status(500).json({ message: "خطا در دریافت اطلاعات" });
   }
 });
@@ -673,7 +686,7 @@ const submitUserListInfo = asyncHandler(async (req, res) => {
     let classUserListResult = await PModel.submitUserListInfo(classUserList);
     res.status(200).json({ classUserListResult: classUserListResult });
   } catch (err) {
-    console.log(err);
+    // console.log(err);
     res.status(500).json({ message: "خطا در دریافت اطلاعات" });
   }
 });
@@ -687,7 +700,7 @@ const getClassHoldTime = asyncHandler(async (req, res) => {
     let holdTime = await PModel.getClassHoldTime(classId);
     res.status(200).json({ holdTime: holdTime });
   } catch (err) {
-    console.log(err);
+    // console.log(err);
     res.status(500).json({ message: "خطا در دریافت اطلاعات" });
   }
 });
@@ -701,7 +714,7 @@ const getClassSession = asyncHandler(async (req, res) => {
     let classSession = await PModel.getClassSession(classId);
     res.status(200).json({ classSession: classSession });
   } catch (err) {
-    console.log(err);
+    // console.log(err);
     res.status(500).json({ message: "خطا در دریافت اطلاعات" });
   }
 });
@@ -716,13 +729,13 @@ const updateHoldTimeStatus = asyncHandler(async (req, res) => {
     let insertResult = await PModel.updateHoldTimeStatus(needHoldTimeId, holdTimeStatus);
     res.status(200).json({ insertResult: insertResult });
   } catch (err) {
-    console.log(err);
+    // console.log(err);
     res.status(500).json({ message: "خطا در دریافت اطلاعات" });
   }
 });
 
 
-//@desc submit or update jahad center
+//@desc submit or update building
 //@route POST /api/v1/data/submitJbuilding
 //@access private
 const submitJbuilding = asyncHandler(async (req, res) => {
@@ -738,7 +751,23 @@ const submitJbuilding = asyncHandler(async (req, res) => {
     res.status(500).json({ message: "خطا در دریافت اطلاعات" });
   }
 });
-//@desc submit or update jahad center
+
+//@desc change building status
+//@route POST /api/v1/data/changeJbuildingStatus
+//@access private
+const changeJbuildingStatus = asyncHandler(async (req, res) => {
+  try {
+    const { jbuildingId, targetStatus } = req.body;
+    await PModel.changeJbuildingStatus(jbuildingId, targetStatus);
+    res.status(200).json({ message: 'اطلاعات با موفقیت ثبت شد' });
+  } catch (err) {
+    res.status(500).json({ message: 'خطا در بروزرسانی اطلاعات!' });
+  }
+});
+
+
+
+//@desc submit or update operator
 //@route POST /api/v1/data/submitOperator
 //@access private
 const submitOperator = asyncHandler(async (req, res) => {
@@ -755,7 +784,7 @@ const submitOperator = asyncHandler(async (req, res) => {
   }
 });
 
-//@desc submit or update jahad center
+//@desc delete operator
 //@route POST /api/v1/data/deleteOperator
 //@access private
 const deleteOperator = asyncHandler(async (req, res) => {
@@ -771,13 +800,27 @@ const deleteOperator = asyncHandler(async (req, res) => {
     res.status(500).json({ message: "خطا در دریافت اطلاعات" });
   }
 });
-//@desc submit or update jahad center
+
+//@desc get rooms options
+//@route POST /api/v1/data/getJRoomsOptionsData
+//@access private
+const getJRoomsOptionsData = asyncHandler(async (req, res) => {
+  try {
+    let roomsOption = await PModel.getJRoomsOptions();
+    res.status(200).json({ roomsOption });
+  } catch (err) {
+    res.status(500).json({ message: "خطا در دریافت اطلاعات" });
+  }
+});
+
+
+//@desc submit or update building rooms
 //@route POST /api/v1/data/submitBuildingRoomRel
 //@access private
 const submitBuildingRoomRel = asyncHandler(async (req, res) => {
   try {
-    const { buildingId, roomTitle } = req.body;
-    let relRS = await PModel.submitBuildingRoomRel(buildingId, roomTitle);
+    const { buildingId, roomTitle, roomOptions } = req.body;
+    let relRS = await PModel.submitBuildingRoomRel(buildingId, roomTitle, roomOptions);
     if (relRS > 0) {
       res.status(200).json({ message: 'اطلاعات با موفقیت ثبت شد' });
     } else {
@@ -796,6 +839,7 @@ const getBuildingRoomRelationData = asyncHandler(async (req, res) => {
     let relRS = await PModel.getBuildingRoomRelationData(buildingId);
     res.status(200).json({ relRS: relRS });
   } catch (err) {
+    // console.log(err);
     res.status(500).json({ message: 'Error in fetching data!' });
   }
 });
@@ -822,7 +866,7 @@ const getAllExamcentersData = asyncHandler(async (req, res) => {
     let allExamcentersData = await PModel.getAllExamcentersData();
     res.status(200).json({ allExamcentersData: allExamcentersData });
   } catch (err) {
-    console.log(err);
+    // console.log(err);
     res.status(500).json({ message: "خطا در دریافت اطلاعات" });
   }
 });
@@ -840,7 +884,7 @@ const submitExamcenter = asyncHandler(async (req, res) => {
       res.status(400).json({ message: 'خطا در ثبت اطلاعات' });
     }
   } catch (err) {
-    console.log(err);
+    // console.log(err);
     res.status(500).json({ message: "خطا در دریافت اطلاعات" });
   }
 });
@@ -857,7 +901,7 @@ const deleteExamcenter = asyncHandler(async (req, res) => {
       res.status(400).json({ message: 'خطا در عملیات' });
     }
   } catch (err) {
-    console.log(err);
+    // console.log(err);
     res.status(500).json({ message: "خطا در دریافت اطلاعات" });
   }
 });
@@ -885,7 +929,7 @@ const getAllJdepartmentsData = asyncHandler(async (req, res) => {
     let allJdepartmentsData = await PModel.getAllJdepartmentsData(mood);
     res.status(200).json({ allJdepartmentsData: allJdepartmentsData });
   } catch (err) {
-    console.log(err);
+    // console.log(err);
     res.status(500).json({ message: "خطا در دریافت اطلاعات" });
   }
 });
@@ -898,7 +942,7 @@ const getJCenterDepartment = asyncHandler(async (req, res) => {
     let JCenterDepartment = await PModel.getJCenterDepartment(userUJCId);
     res.status(200).json({ JCenterDepartment: JCenterDepartment });
   } catch (err) {
-    console.log(err);
+    // console.log(err);
     res.status(500).json({ message: "خطا در دریافت اطلاعات" });
   }
 });
@@ -916,7 +960,7 @@ const submitJdepartment = asyncHandler(async (req, res) => {
       res.status(400).json({ message: 'خطا در ثبت اطلاعات' });
     }
   } catch (err) {
-    console.log(err);
+    // console.log(err);
     res.status(500).json({ message: "خطا در دریافت اطلاعات" });
   }
 });
@@ -933,7 +977,7 @@ const deleteJdepartment = asyncHandler(async (req, res) => {
       res.status(400).json({ message: 'خطا در عملیات' });
     }
   } catch (err) {
-    console.log(err);
+    // console.log(err);
     res.status(500).json({ message: "خطا در دریافت اطلاعات" });
   }
 });
@@ -959,7 +1003,7 @@ const getRequestsFilters = asyncHandler(async (req, res) => {
     let requestsFilters = await PModel.getRequestsFilters();
     res.status(200).json({ requestsFilters: requestsFilters });
   } catch (err) {
-    console.log(err);
+    // console.log(err);
     res.status(500).json({ message: "خطا در دریافت اطلاعات" });
   }
 });
@@ -975,7 +1019,7 @@ const getRequestsData = asyncHandler(async (req, res) => {
     let requestsData = await PModel.getRequestsData(requestType, userDataRS);
     res.status(200).json({ requestsData: requestsData, UJCId: userDataRS[0]['jcenter_id'] });
   } catch (err) {
-    console.log(err);
+    // console.log(err);
     res.status(500).json({ message: "خطا در دریافت اطلاعات" });
   }
 });
@@ -1005,7 +1049,7 @@ const submitJRequestForm = asyncHandler(async (req, res) => {
       res.status(400).json({ message: 'خطا در ثبت اطلاعات' });
     }
   } catch (err) {
-    console.log(err);
+    // console.log(err);
     res.status(500).json({ message: "خطا در دریافت اطلاعات" });
   }
 });
@@ -1022,7 +1066,7 @@ const deleteJrequest = asyncHandler(async (req, res) => {
       res.status(400).json({ message: 'خطا در عملیات' });
     }
   } catch (err) {
-    console.log(err);
+    // console.log(err);
     res.status(500).json({ message: "خطا در دریافت اطلاعات" });
   }
 });
@@ -1038,7 +1082,7 @@ const loadLastLogin = asyncHandler(async (req, res) => {
     let lastLogin = await PModel.loadLastLogin(userID);
     res.status(200).json({ lastLogin });
   } catch (err) {
-    console.log(err);
+    // console.log(err);
     res.status(500).json({ message: "خطا در دریافت اطلاعات" });
   }
 });
@@ -1053,7 +1097,7 @@ const loadDashboardData = asyncHandler(async (req, res) => {
     let dashboardData = await PModel.loadDashboardData(userID);
     res.status(200).json({ dashboardData });
   } catch (err) {
-    console.log(err);
+    // console.log(err);
     res.status(500).json({ message: "خطا در دریافت اطلاعات" });
   }
 });
@@ -1066,7 +1110,7 @@ const loadMemberWeekLyPlan = asyncHandler(async (req, res) => {
     let memberWeekPlan = await PModel.loadMemberWeekLyPlan(userID);
     res.status(200).json({ memberWeekPlan });
   } catch (err) {
-    console.log(err);
+    // console.log(err);
     res.status(500).json({ message: "خطا در دریافت اطلاعات" });
   }
 });
@@ -1105,10 +1149,12 @@ module.exports = {
   resetJcenterPassword,
   getJCenterWithSubCenters,
   getAllJbuildingsData,
+  getJRoomsOptionsData,
   submitBuildingRoomRel,
   getBuildingRoomRelationData,
   updateBuildingRoomRelStatus,
   submitJbuilding,
+  changeJbuildingStatus,
   getAllExamcentersData,
   submitExamcenter,
   deleteExamcenter,
@@ -1135,6 +1181,7 @@ module.exports = {
   deleteSession,
   deleteAllSession,
   autoSessionGenerator,
+  getClassSessionUserList,
   getClassUserList,
   changeUserSessionStatus,
   submitUserListInfo,

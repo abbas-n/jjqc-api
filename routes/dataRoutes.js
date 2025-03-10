@@ -39,6 +39,8 @@ router.post("/deleteOperator", dataCtrl.deleteOperator);
 //-----------------------------------------------------------------------------------
 router.post("/getAllJbuildingsData", dataCtrl.getAllJbuildingsData);
 router.post("/submitJbuilding", dataCtrl.submitJbuilding); 
+router.post("/changeJbuildingStatus", dataCtrl.changeJbuildingStatus);
+router.get("/getJRoomsOptionsData", dataCtrl.getJRoomsOptionsData);
 router.post("/submitBuildingRoomRel", dataCtrl.submitBuildingRoomRel);
 router.post("/getBuildingRoomRelationData", dataCtrl.getBuildingRoomRelationData);
 router.post("/updateBuildingRoomRelStatus", dataCtrl.updateBuildingRoomRelStatus);
@@ -54,6 +56,7 @@ router.post("/submitSession", dataCtrl.submitSession);
 router.post("/deleteSession", dataCtrl.deleteSession);
 router.post("/deleteAllSession", dataCtrl.deleteAllSession);
 router.post("/autoSessionGenerator", dataCtrl.autoSessionGenerator);
+router.post("/getClassSessionUserList", dataCtrl.getClassSessionUserList);
 router.post("/getClassUserList", dataCtrl.getClassUserList);
 router.post("/getClassCancelationUserList", dataCtrl.getClassCancelationUserList);
 router.post("/changeUserSessionStatus", dataCtrl.changeUserSessionStatus);

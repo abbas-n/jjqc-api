@@ -26,7 +26,7 @@ router.post("/updateLessonEduGroupRelStatus", educationCtrl.updateLessonEduGroup
 router.get("/getAllJob", educationCtrl.getAllJob);
 router.get("/getWithExamJob", educationCtrl.getWithExamJob);
 router.get("/getWithExamLesson", educationCtrl.getWithExamLesson);
-router.get("/getAllExam", educationCtrl.getAllExam);
+router.post("/getAllExam", educationCtrl.getAllExam);
 router.get("/getJobType", educationCtrl.getJobType);
 router.post("/submitJob", educationCtrl.addJobInfoToDb);
 router.post("/deleteJob", educationCtrl.deleteJob);
@@ -67,6 +67,7 @@ router.post("/submitAddTeacherRequest", educationCtrl.submitAddTeacherRequest);
 
 //-------------------------Cart------------------------------------
 router.post("/addClassToCart", educationCtrl.addClassToUserCart);
+router.post("/addExamToCart", educationCtrl.addExamToUserCart);
 router.get("/loadUserCart", educationCtrl.loadUserCart);
 router.post("/removeFromCart", educationCtrl.removeFromCart);
 router.post("/applyDiscountCode", educationCtrl.applyDiscountCode);
@@ -85,7 +86,7 @@ router.post("/deleteClasses", educationCtrl.deleteClass);
 router.get("/getCertificateInfo", educationCtrl.getCertificateInfo);
 router.get("/getCertificateStructure", educationCtrl.getCertificateStructure);
 router.get("/getUserClassesToCheckForRegister", educationCtrl.getUserClassesToCheckForRegister);
-router.post("/getLessonTeacherData", educationCtrl.getLessonTeacherData);
+router.post("/getClassTeacherData", educationCtrl.getClassTeacherData);
 router.post("/submitClassTeacherRel", educationCtrl.submitClassTeacherRel);
 router.post("/updateClassTeacherRelStatus", educationCtrl.updateClassTeacherRelStatus);
 router.post("/changeClassStatus", educationCtrl.changeClassStatus);
