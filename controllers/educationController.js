@@ -348,6 +348,19 @@ const submitExamPlan = asyncHandler(async (req, res) => {
   }
 });
 
+//@route POST /v1/education/loadExamCenterForOstan
+//@access private
+const loadExamCenterForOstan = asyncHandler(async (req, res) => {
+  try {
+    const userID = req.user.ID;
+    const { selectedOstan } = req.body;
+    let examCenter = await educationModel.loadExamCenterForOstan(selectedOstan);
+    res.status(200).json({ examCenter });
+  } catch (err) {
+    res.status(500).json({ message: 'Error in fetching data!' });
+  }
+});
+
 
 //@desc courseCancelPreSignup
 //@route get /api/v1/education/getAllJobLesson
@@ -1308,5 +1321,6 @@ module.exports = {
   getWithExamJob,
   getWithExamLesson,
   getAllExam,
-  addExamToUserCart
+  addExamToUserCart,
+  loadExamCenterForOstan
 };

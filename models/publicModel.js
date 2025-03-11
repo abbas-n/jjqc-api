@@ -856,29 +856,6 @@ user__payback_need.jcenters_id=?`;
         queryRS = await module.exports.dbQuery_promise(query);
         return queryRS;
     },
-    submitOperator: async (operatorData, jcenterId) => {
-        let statement, query, queryRS;
-        if (operatorData.ID) {
-            statement = `UPDATE user__info SET fname=?,lname=?,national_code=?,mobile=? WHERE ID=?`;
-            query = mysql.format(statement, [operatorData.fname, operatorData.lname, operatorData.national_code, operatorData.mobile, operatorData.ID]);
-            queryRS = await module.exports.dbQuery_promise(query);
-            if (queryRS.affectedRows > 0) {
-                return queryRS.affectedRows;
-            } else {
-                return -1;
-            }
-        } else {
-            statement = `INSERT INTO user__info(fname, lname, national_code, mobile, password, permission, jcenter_id) VALUES (?,?,?,?,?,?,?)`;
-            let password = hashedPassword = await bcrypt.hash(operatorData.national_code, 10);
-            query = mysql.format(statement, [operatorData.fname, operatorData.lname, operatorData.national_code, operatorData.mobile, password, 7, jcenterId]);
-            queryRS = await module.exports.dbQuery_promise(query);
-            if (queryRS.insertId > 0) {
-                return queryRS.insertId;
-            } else {
-                return -1;
-            }
-        }
-    },
     getJRoomsOptions: async () => {
         let statement, query, queryRS;
         statement = `SELECT * FROM jcenters__rooms_option WHERE status='Active'`;
@@ -993,6 +970,29 @@ user__payback_need.jcenters_id=?`;
         queryRS = await module.exports.dbQuery_promise(query);
         return queryRS;
     },
+    submitOperator: async (operatorData, jcenterId) => {
+        let statement, query, queryRS;
+        if (operatorData.ID) {
+            statement = `UPDATE user__info SET fname=?,lname=?,national_code=?,mobile=? WHERE ID=?`;
+            query = mysql.format(statement, [operatorData.fname, operatorData.lname, operatorData.national_code, operatorData.mobile, operatorData.ID]);
+            queryRS = await module.exports.dbQuery_promise(query);
+            if (queryRS.affectedRows > 0) {
+                return queryRS.affectedRows;
+            } else {
+                return -1;
+            }
+        } else {
+            statement = `INSERT INTO user__info(fname, lname, national_code, mobile, password, permission, jcenter_id) VALUES (?,?,?,?,?,?,?)`;
+            let password = hashedPassword = await bcrypt.hash(operatorData.national_code, 10);
+            query = mysql.format(statement, [operatorData.fname, operatorData.lname, operatorData.national_code, operatorData.mobile, password, 7, jcenterId]);
+            queryRS = await module.exports.dbQuery_promise(query);
+            if (queryRS.insertId > 0) {
+                return queryRS.insertId;
+            } else {
+                return -1;
+            }
+        }
+    },
     deleteOperator: async (operatorId) => {
         let statement, query, queryRS;
         statement = `DELETE FROM user__info WHERE ID=?`;
@@ -1003,6 +1003,13 @@ user__payback_need.jcenters_id=?`;
         } else {
             return -1;
         }
+    },
+    changeJOperatorStatus: async (jOperatorId, targetStatus) => {
+        let statement, query, queryRS;
+        statement = `UPDATE user__info SET status=? WHERE ID=?`;
+        query = mysql.format(statement, [targetStatus, jOperatorId]);
+        queryRS = await module.exports.dbQuery_promise(query);
+        return queryRS;
     },
     getAllJdepartmentsData: async (mood) => {
         // console.time("getAllJdepartmentsData");

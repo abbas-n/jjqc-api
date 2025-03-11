@@ -34,6 +34,7 @@ router.post("/loadJobLesson", educationCtrl.loadJobLesson);
 router.post("/submitJobExamRelation", educationCtrl.submitJobExamRelation);
 router.get("/loadExamPlanForCenter", educationCtrl.loadExamPlanForCenter);
 router.post("/submitExamPlan", educationCtrl.submitExamPlan);
+router.post("/loadExamCenterForOstan", educationCtrl.loadExamCenterForOstan);
 
 //-------------------------Job Lesson Relation------------------------------------
 router.get("/getAllJobLesson", educationCtrl.getAllJobLesson);

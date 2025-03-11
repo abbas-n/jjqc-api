@@ -801,6 +801,19 @@ const deleteOperator = asyncHandler(async (req, res) => {
   }
 });
 
+//@desc change Operator status
+//@route POST /api/v1/data/changeJOperatorStatus
+//@access private
+const changeJOperatorStatus = asyncHandler(async (req, res) => {
+  try {
+    const { jOperatorId, targetStatus } = req.body;
+    await PModel.changeJOperatorStatus(jOperatorId, targetStatus);
+    res.status(200).json({ message: 'اطلاعات با موفقیت ثبت شد' });
+  } catch (err) {
+    res.status(500).json({ message: 'خطا در بروزرسانی اطلاعات!' });
+  }
+});
+
 //@desc get rooms options
 //@route POST /api/v1/data/getJRoomsOptionsData
 //@access private
@@ -1189,6 +1202,7 @@ module.exports = {
   getJCenterOperatorList,
   submitOperator,
   deleteOperator,
+  changeJOperatorStatus,
   getClassCancelationUserList,
   acceptCancelRequest,
   getPayBackData,

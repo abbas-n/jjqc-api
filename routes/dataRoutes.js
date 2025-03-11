@@ -36,6 +36,7 @@ router.post("/resetJcenterPassword", dataCtrl.resetJcenterPassword);
 router.post("/getJCenterOperatorList", dataCtrl.getJCenterOperatorList); 
 router.post("/submitOperator", dataCtrl.submitOperator); 
 router.post("/deleteOperator", dataCtrl.deleteOperator); 
+router.post("/changeJOperatorStatus", dataCtrl.changeJOperatorStatus);
 //-----------------------------------------------------------------------------------
 router.post("/getAllJbuildingsData", dataCtrl.getAllJbuildingsData);
 router.post("/submitJbuilding", dataCtrl.submitJbuilding); 

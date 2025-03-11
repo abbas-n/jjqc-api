@@ -326,6 +326,13 @@ lesson__info.description
         queryRS = await module.exports.dbQuery_promise(query);
         return queryRS;
     },
+    loadExamCenterForOstan: async (ostanId) => {
+        let statement, query, queryRS;
+        statement = `SELECT * FROM jcenters__info WHERE (parent_id IS NULL OR parent_id = 0) AND center_mood="exam_center" AND state_id = ?`;
+        query = mysql.format(statement, [ostanId]);
+        queryRS = await module.exports.dbQuery_promise(query);
+        return queryRS;
+    },
     submitExamPlan: async (queryBody, userID) => {
         let statement, query, queryRS;
         if (queryBody.ID) {
