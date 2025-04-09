@@ -26,6 +26,7 @@ router.post("/updateLessonEduGroupRelStatus", educationCtrl.updateLessonEduGroup
 router.get("/getAllJob", educationCtrl.getAllJob);
 router.get("/getWithExamJob", educationCtrl.getWithExamJob);
 router.get("/getWithExamLesson", educationCtrl.getWithExamLesson);
+router.get("/loadExamApplicantForExamCenter", educationCtrl.loadExamApplicantForExamCenter);
 router.post("/getAllExam", educationCtrl.getAllExam);
 router.get("/getJobType", educationCtrl.getJobType);
 router.post("/submitJob", educationCtrl.addJobInfoToDb);
@@ -35,6 +36,11 @@ router.post("/submitJobExamRelation", educationCtrl.submitJobExamRelation);
 router.get("/loadExamPlanForCenter", educationCtrl.loadExamPlanForCenter);
 router.post("/submitExamPlan", educationCtrl.submitExamPlan);
 router.post("/loadExamCenterForOstan", educationCtrl.loadExamCenterForOstan);
+router.post("/loadExamCenterPlan", educationCtrl.loadExamCenterPlan);
+router.post("/submitExamCenterTime", educationCtrl.submitExamCenterTime);
+router.post("/loadReserveDetails", educationCtrl.loadReserveDetails);
+router.post("/submitRequestChange", educationCtrl.submitRequestChange);
+router.post("/getExamQuestions", educationCtrl.getExamQuestions);
 
 //-------------------------Job Lesson Relation------------------------------------
 router.get("/getAllJobLesson", educationCtrl.getAllJobLesson);

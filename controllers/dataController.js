@@ -2,7 +2,9 @@ const asyncHandler = require("express-async-handler");
 const { dbCon, mysql } = require("../config/dbConnection");
 const tools = require("../utils/tools");
 const PModel = require("../models/publicModel");
+const educationModel = require("../models/educationModel");
 const jdate = require('jdate').JDate();
+const moodleOBJ = require("../utils/moodleApi");
 
 
 
@@ -46,185 +48,6 @@ const getCountries = asyncHandler(async (req, res) => {
   } catch (err) {
   }
 });
-
-
-//@desc get seniority levels 
-//@route GET /api/v1/data/SeniorityLevels
-//@access private
-const getSeniorityLevels = asyncHandler(async (req, res) => {
-  let SLevelsRS = await PModel.getResumeSeniorityLevels();
-  if (SLevelsRS.length > 0) {
-    res.status(200).json({ SLevelsRS });
-  } else {
-    res.status(400).json({ message: 'خطا در دریافت مقاطع تحصیلی' });
-  }
-});
-
-//@desc get education grades  
-//@route GET /api/v1/data/resumeGrades
-//@access private
-const getGrades = asyncHandler(async (req, res) => {
-  let gradesRS = await PModel.getResumeGrades();
-  if (gradesRS.length > 0) {
-    res.status(200).json({ gradesRS });
-  } else {
-    res.status(400).json({ message: 'خطا در دریافت مقاطع تحصیلی' });
-  }
-});
-
-//@desc get education majors  
-//@route GET /api/v1/data/resumeMajors
-//@access private
-const getMajors = asyncHandler(async (req, res) => {
-  let majorsRS = await PModel.getResumeMajors();
-  if (majorsRS.length > 0) {
-    res.status(200).json({ majorsRS });
-  } else {
-    res.status(400).json({ message: 'خطا در دریافت رشته تحصیلی' });
-  }
-});
-
-//@desc get education majors which are active in system
-//@route GET /api/v1/data/resumeActiveMajors
-//@access private
-const getActiveMajors = asyncHandler(async (req, res) => {
-  let majorsRS = await PModel.getResumeActiveMajors();
-  if (majorsRS.length > 0) {
-    res.status(200).json({ majorsRS });
-  } else {
-    res.status(400).json({ message: 'خطا در دریافت رشته تحصیلی' });
-  }
-});
-
-//@desc get universities 
-//@route GET /api/v1/data/resumeUniversities
-//@access private
-const getUniversities = asyncHandler(async (req, res) => {
-  let universitiesRS = await PModel.getResumeUniversities();
-  if (universitiesRS.length > 0) {
-    res.status(200).json({ universitiesRS });
-  } else {
-    res.status(400).json({ message: 'خطا در دریافت دانشگاه ها' });
-  }
-});
-
-
-//@desc get jobs 
-//@route GET /api/v1/data/resumeJobs
-//@access private
-const getJobs = asyncHandler(async (req, res) => {
-  let jobsRS = await PModel.getResumeJobs();
-  if (jobsRS.length > 0) {
-    res.status(200).json({ jobsRS });
-  } else {
-    res.status(400).json({ message: 'خطا در دریافت شغل ها' });
-  }
-});
-
-//@desc get active jobs 
-//@route GET /api/v1/data/resumeActiveJobs
-//@access private
-const getActiveJobs = asyncHandler(async (req, res) => {
-  let jobsRS = await PModel.getResumeActiveJobs();
-  if (jobsRS.length > 0) {
-    res.status(200).json({ jobsRS });
-  } else {
-    res.status(400).json({ message: 'خطا در دریافت شغل ها' });
-  }
-});
-
-//@desc get company industry 
-//@route GET /api/v1/data/resumeJobs
-//@access private
-const getIndustires = asyncHandler(async (req, res) => {
-  let CINDRS = await PModel.getResumeIndustries();
-  if (CINDRS.length > 0) {
-    res.status(200).json({ CINDRS });
-  } else {
-    res.status(400).json({ message: 'خطا در دریافت زمینه شرکت ها' });
-  }
-});
-
-//@desc get languages  
-//@route GET /api/v1/data/resumeMajors
-//@access private
-const getLangueges = asyncHandler(async (req, res) => {
-  let languagesRS = await PModel.getResumeLanguges();
-  if (languagesRS.length > 0) {
-    res.status(200).json({ languagesRS });
-  } else {
-    res.status(400).json({ message: 'خطا در دریافت زبان ها' });
-  }
-});
-
-//@desc get software skills  
-//@route GET /api/v1/data/resumeSoftwareSkills
-//@access private
-const getSoftwareSkills = asyncHandler(async (req, res) => {
-  let SSMainGroupRS = await PModel.getResumeSoftwareSkills(0);
-  let softwareSkillsRS = await PModel.getResumeSoftwareSkills(1);
-  if (SSMainGroupRS.length > 0) {
-    res.status(200).json({ SSMainGroupRS, softwareSkillsRS });
-  } else {
-    res.status(400).json({ message: 'خطا در دریافت مهارت های نرم افزاری' });
-  }
-});
-
-//@desc save user resume data
-//@route POST /api/v1/data/submitResume
-//@access private
-const submitResumeData = asyncHandler(async (req, res) => {
-  try {
-    const userID = req.user.ID;
-    let resumeData = req.body.resumeData;
-    const sqlInsert = `INSERT INTO resume__user_data(user_id,fname,lname,gender,marriage,Bday,Bmonth,
-      Byear,military_id,livingCity_id,livingCity,preferJobs,educationData,jobsData,langData,softwareSkillsData) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`;
-    const insert_query = mysql.format(sqlInsert, [userID, resumeData['fname'], resumeData['lname'], resumeData['gender'], resumeData['marriage'], resumeData['Bday'],
-      resumeData['Bmonth'], resumeData['Byear'], resumeData['military'], resumeData['livingCity']['id'], JSON.stringify(resumeData['livingCity']), JSON.stringify(resumeData['preferJobs']),
-      JSON.stringify(resumeData['educationData']), JSON.stringify(resumeData['jobsData']), JSON.stringify(resumeData['langData']), JSON.stringify(resumeData['softwareSkillsData'])]);
-    await PModel.dbQuery_promise(insert_query);
-    res.status(200).json({ message: 'اطلاعات با موفقیت ثبت شد' });
-  } catch (err) {
-    res.status(500).json({ message: "خطا در عملیات" });
-  }
-});
-
-//@desc update user resume data
-//@route POST /api/v1/data/updateResume
-//@access private
-const updateResume = asyncHandler(async (req, res) => {
-  try {
-    const userID = req.user.ID;
-    // const userID = 1;
-    let resumeData = req.body.resumeData;
-    const sqlupdate = `UPDATE resume__user_data SET fname=?,lname=?,gender=?,marriage=?,Bday=?,Bmonth=?,
-      Byear=?,military_id=?,livingCity_id=?,livingCity=?,preferJobs=?,educationData=?,jobsData=?,langData=?,softwareSkillsData=? 
-      WHERE user_id=?`;
-    const update_query = mysql.format(sqlupdate, [resumeData['fname'], resumeData['lname'], resumeData['gender'], resumeData['marriage'], resumeData['Bday'],
-    resumeData['Bmonth'], resumeData['Byear'], resumeData['military'], resumeData['livingCity']['id'], JSON.stringify(resumeData['livingCity']), JSON.stringify(resumeData['preferJobs']),
-    JSON.stringify(resumeData['educationData']), JSON.stringify(resumeData['jobsData']), JSON.stringify(resumeData['langData']), JSON.stringify(resumeData['softwareSkillsData']), userID]);
-    await PModel.dbQuery_promise(update_query);
-    res.status(200).json({ message: 'بروزرسانی با موفقیت انجام شد' });
-  } catch (err) {
-    res.status(500).json({ message: "خطا در بروزرسانی" });
-  }
-});
-
-//@desc get user resume data
-//@route GET /api/v1/data/getUserResumeData
-//@access private
-const getUserResumeData = asyncHandler(async (req, res) => {
-  try {
-    const userID = req.user.ID;
-    const userResume = await PModel.getUserResumeData(userID);
-    res.status(200).json(userResume);
-  } catch (err) {
-    // console.log(err);
-    res.status(500).json({ message: "خطا در بروزرسانی" });
-  }
-});
-
-
 
 //@desc get User dashboard data
 //@route POST /api/v1/data/getDashboardData
@@ -640,9 +463,17 @@ const changeUserSessionStatus = asyncHandler(async (req, res) => {
 //@access private
 const acceptCancelRequest = asyncHandler(async (req, res) => {
   try {
-    const { requestId, jcenterId } = req.body;
+    const { requestId, jcenterId, classId, userId } = req.body;
     const userID = req.user.ID;
-    let acceptRequest = await PModel.acceptCancelRequest(requestId, jcenterId, userID);
+    let classData = await educationModel.getClassData(classId);
+    let acceptRequest = await PModel.acceptCancelRequest(requestId, jcenterId, classId, classData[0]['cancellation_penalty'], userID);
+    let classDeliveryRS = await educationModel.loadClassDeliveryType(classId);
+    classDeliveryRS.map(async row => {
+      if (row['delivery_id'] === 3) {
+        let userData = await educationModel.getUserDetail(userId);
+        await moodleOBJ.unenrollUserInCourse(userData[0]['moodle_user_id'], classData[0]['moodle_course_id']);
+      }
+    });
     res.status(200).json({ acceptRequest: acceptRequest });
   } catch (err) {
     // console.log(err);
@@ -668,11 +499,11 @@ const getPayBackData = asyncHandler(async (req, res) => {
 //@access private
 const acceptPayBack = asyncHandler(async (req, res) => {
   try {
-    const { requestId } = req.body;
-    let acceptRequest = await PModel.acceptPayBack(requestId);
+    const { requestId, paymentCode, paymentDoc } = req.body;
+    let acceptRequest = await PModel.acceptPayBack(requestId, paymentDoc, paymentCode);
     res.status(200).json({ acceptRequest: acceptRequest });
   } catch (err) {
-    // console.log(err);
+    console.log(err);
     res.status(500).json({ message: "خطا در دریافت اطلاعات" });
   }
 });
@@ -1135,19 +966,6 @@ const loadMemberWeekLyPlan = asyncHandler(async (req, res) => {
 module.exports = {
   getCities,
   getCountries,
-  getSeniorityLevels,
-  getGrades,
-  getMajors,
-  getActiveMajors,
-  getUniversities,
-  getJobs,
-  getActiveJobs,
-  getIndustires,
-  getLangueges,
-  getSoftwareSkills,
-  submitResumeData,
-  updateResume,
-  getUserResumeData,
   getDashboardData,
   submitUserEventsCalendar,
   getUserEventsCalendar,

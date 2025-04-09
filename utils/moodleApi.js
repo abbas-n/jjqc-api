@@ -212,11 +212,11 @@ module.exports = {
             'courses[0][format]': "weeks",
             'courses[0][visible]': (status === 'Active' ? 1 : 0),
         };
-        console.log(formData);
+        // console.log(formData);
         try {
             let response = await module.exports.post_request_formData(moodleUrl, { 'Content-Type': 'application/x-www-form-urlencoded' }, formData);
             response = JSON.parse(response);
-            console.log(response);
+            // console.log(response);
             // if (response[0]['id'] > 0) {
             //     let statement, query, queryRS;
             //     statement = `UPDATE classes__info SET moodle_course_id=? WHERE ID=?`;

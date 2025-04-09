@@ -21,5 +21,19 @@ router.post("/setPanelLight", validateToken, auth.setPanelLight);
 router.post("/setPanelThem", validateToken, auth.setPanelThem);
 router.post("/loadJcenterForOstan", auth.loadJcenterForOstan);
 router.get("/loadCityOstan", auth.loadCistyOstan);
+//----------------------------------------------------------------
+//----------------------------------------------------------------
+//-----------------------------------------------SITE LANDING APIS
+
+router.get("/getLandingBanners", auth.getLandingBanners);
+router.get("/getSiteStartingClasses", auth.getSiteStartingClasses);
+router.get("/getSiteToCompleteClasses", auth.getSiteStartingClasses);
+router.post("/getLandingClassData", auth.getLandingClassData);
+router.get("/getCitiesWithCenter", auth.getCitiesWithCenter);
+router.post("/getCentersByCity", auth.getCentersByCity);
+router.post("/getClassesByCenter", auth.getClassesByCenter);
+router.get("/getMainWorkingGroups", auth.getMainWorkingGroups);
+router.post("/getWorkingGroups", auth.getWorkingGroups);
+router.post("/getClassesByWorkingGroup", auth.getClassesByWorkingGroup);
 
 module.exports = router;

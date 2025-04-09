@@ -4,6 +4,7 @@ const jwt = require("jsonwebtoken");
 const { dbCon, mysql } = require("../config/dbConnection");
 const tools = require("../utils/tools");
 const PModel = require("../models/publicModel");
+const educationModel = require("../models/educationModel");
 const axios = require('axios');
 
 
@@ -126,7 +127,7 @@ const checkVerifyCode = asyncHandler(async (req, res) => {
 const registerUser = asyncHandler(async (req, res) => {
   try {
 
-    const { mobile, fname, lname, pass, nationalCode , selectedCenter } = req.body;
+    const { mobile, fname, lname, pass, nationalCode, selectedCenter } = req.body;
 
     if (!mobile || !pass || !fname || !lname, !nationalCode) {
       res.status(400);
@@ -157,13 +158,16 @@ const registerUser = asyncHandler(async (req, res) => {
     if (result.length != 0) {
       res.status(400).json({ message: "کاربر با این اطلاعات قبلا ثبت شده است" });
     } else {
-      const uCode = await tools.generateUniqueCode('user__info', 'code', 6);
+      const uCode = await tools.generateUniqueCode('user__info', 'code', 6, 'U');
       const hashedPassword = await bcrypt.hash(pass, 10);
       let sqlInsert = "INSERT INTO user__info(code,fname,lname,national_code,mobile,password,status,jcenter_id) VALUES (?,?,?,?,?,?,?,?)";
-      let insert_query = mysql.format(sqlInsert, [uCode, fname, lname, nationalCode, mobile, hashedPassword, 'Not_Confirmed' , selectedCenter]);
+      let insert_query = mysql.format(sqlInsert, [uCode, fname, lname, nationalCode, mobile, hashedPassword, 'Not_Confirmed', selectedCenter]);
       let queryRS = await PModel.dbQuery_promise(insert_query);
       if (queryRS.insertId > 0) {
         sqlInsert = "INSERT INTO user__them_setting(user_id) VALUES (?)";
+        insert_query = mysql.format(sqlInsert, [queryRS.insertId]);
+        await PModel.dbQuery_promise(insert_query);
+        sqlInsert = "INSERT INTO user__detail(user_id) VALUES (?)";
         insert_query = mysql.format(sqlInsert, [queryRS.insertId]);
         await PModel.dbQuery_promise(insert_query);
         await axios.post('https://api.jjqc.ir/api/v1/auth/sendVerifyCode', {
@@ -438,7 +442,7 @@ const submitNewPass = asyncHandler(async (req, res) => {
   } catch (err) {
     res.status(500).json({ message: 'خطا در ثبت اطلاعات' });
   }
-  
+
 });
 
 
@@ -450,15 +454,15 @@ const submitChangePass = asyncHandler(async (req, res) => {
   const userID = req.user.ID;
   const { newPass } = req.body;
   try {
-      const hashedPassword = await bcrypt.hash(newPass, 10);
-      let updateUser = "UPDATE user__info SET password=? WHERE ID=?";
-      updateUser = mysql.format(updateUser, [hashedPassword, userID]);
-      updateUser = await PModel.dbQuery_promise(updateUser);
-      if (updateUser.affectedRows == 1) {
-        res.status(200).json({ message: 'اطلاعات با موفقیت ثبت شد' });
-      } else {
-        res.status(500).json({ message: 'خطا در ثبت اطلاعات' });
-      }
+    const hashedPassword = await bcrypt.hash(newPass, 10);
+    let updateUser = "UPDATE user__info SET password=? WHERE ID=?";
+    updateUser = mysql.format(updateUser, [hashedPassword, userID]);
+    updateUser = await PModel.dbQuery_promise(updateUser);
+    if (updateUser.affectedRows == 1) {
+      res.status(200).json({ message: 'اطلاعات با موفقیت ثبت شد' });
+    } else {
+      res.status(500).json({ message: 'خطا در ثبت اطلاعات' });
+    }
   } catch (err) {
     res.status(500).json({ message: 'خطا در ثبت اطلاعات' });
   }
@@ -585,7 +589,6 @@ const setPanelThem = asyncHandler(async (req, res) => {
     await PModel.setPanelThem(userID, them);
     res.status(200).json({ message: 'بروزرسانی با موفقیت انجام شد' });
   } catch (err) {
-    console.log(err);
     res.status(500).json({ message: "خطا در دریافت اطلاعات" });
   }
 });
@@ -598,7 +601,6 @@ const loadCistyOstan = asyncHandler(async (req, res) => {
     let cityOstan = await PModel.loadCistyOstan();
     res.status(200).json({ cityOstan });
   } catch (err) {
-    console.log(err);
     res.status(500).json({ message: "خطا در دریافت اطلاعات" });
   }
 });
@@ -611,10 +613,139 @@ const loadJcenterForOstan = asyncHandler(async (req, res) => {
     let ostanJcenter = await PModel.loadJcenterForOstan(selectedOstan);
     res.status(200).json({ ostanJcenter });
   } catch (err) {
-    console.log(err);
     res.status(500).json({ message: "خطا در دریافت اطلاعات" });
   }
 });
+
+//----------------------------------------------------------------
+//----------------------------------------------------------------
+//-----------------------------------------------SITE LANDING APIS
+
+//@desc get site landing banners
+//@route post /api/v1/auth/landingBanners
+//@access private
+const getLandingBanners = asyncHandler(async (req, res) => {
+  try {
+    let statement, query, banners;
+    statement = `SELECT
+    classes__info.ID,
+    classes__info.image_url
+	  FROM site__banners
+    INNER JOIN classes__info ON classes__info.ID = site__banners.class_id`;
+    query = mysql.format(statement, []);
+    banners = await PModel.dbQuery_promise(query);
+    res.status(200).json({ banners });
+  } catch (err) {
+    res.status(500).json({ message: "خطا در دریافت اطلاعات" });
+  }
+});
+
+//@desc get site starting classes 
+//@route post /api/v1/auth/getSiteStartingClasses
+//@access private
+const getSiteStartingClasses = asyncHandler(async (req, res) => {
+  try {
+
+    let startingClasses = await PModel.getSiteStartingClasses(0);
+    res.status(200).json({ startingClasses });
+  } catch (err) {
+    res.status(500).json({ message: "خطا در دریافت اطلاعات" });
+  }
+});
+
+//@desc get site class Details 
+//@route post /api/v1/auth/getLandingClassData
+//@access private
+const getLandingClassData = asyncHandler(async (req, res) => {
+  try {
+
+    const { classId } = req.body;
+    let classHoldTime = await PModel.getClassHoldTimeData(classId, 'Active');
+    let classTeacherRS = await educationModel.getClassTeacherData(classId);
+    let classData = await PModel.getSiteStartingClasses(classId);
+    res.status(200).json({ classData: classData, classHoldTime: classHoldTime, classTeacherRS: classTeacherRS });
+  } catch (err) {
+    res.status(500).json({ message: "خطا در دریافت اطلاعات" });
+  }
+});
+
+//@desc get cities with centers
+//@route post /api/v1/auth/getCitiesWithCenter
+//@access public
+const getCitiesWithCenter = asyncHandler(async (req, res) => {
+  try {
+
+    let citiesWithCenter = await PModel.getCitiesWithCenter();
+    res.status(200).json({ citiesWithCenter: citiesWithCenter });
+  } catch (err) {
+    res.status(500).json({ message: "خطا در دریافت اطلاعات" });
+  }
+});
+
+//@desc get centers By city ID
+//@route post /api/v1/auth/getCentersByCity
+//@access public
+const getCentersByCity = asyncHandler(async (req, res) => {
+  try {
+    const { cityId } = req.body;
+    let centersData = await PModel.getCentersByCity(cityId);
+    res.status(200).json({ centersData: centersData });
+  } catch (err) {
+    res.status(500).json({ message: "خطا در دریافت اطلاعات" });
+  }
+});
+
+//@desc get classes by centerId
+//@route post /api/v1/auth/getClassesByCenter
+//@access public
+const getClassesByCenter = asyncHandler(async (req, res) => {
+  try {
+    const { centerId } = req.body;
+    let classData = await PModel.getClassesByCenter(centerId);
+    res.status(200).json({ classData: classData });
+  } catch (err) {
+    res.status(500).json({ message: "خطا در دریافت اطلاعات" });
+  }
+});
+
+//@desc get classes by centerId
+//@route post /api/v1/auth/getClassesByCenter
+//@access public
+const getMainWorkingGroups = asyncHandler(async (req, res) => {
+  try {
+    let mainGroups = await PModel.getMainWorkingGroups();
+    res.status(200).json({ mainGroups: mainGroups });
+  } catch (err) {
+    res.status(500).json({ message: "خطا در دریافت اطلاعات" });
+  }
+});
+
+//@desc get working groups by main groups
+//@route post /api/v1/auth/getWorkingGroups
+//@access public
+const getWorkingGroups = asyncHandler(async (req, res) => {
+  try {
+    const { mainGroupId } = req.body;
+    let workingGroups = await PModel.getWorkingGroups(mainGroupId);
+    res.status(200).json({ workingGroups: workingGroups });
+  } catch (err) {
+    res.status(500).json({ message: "خطا در دریافت اطلاعات" });
+  }
+});
+
+//@desc get classes by workingGroup id
+//@route post /api/v1/auth/getClassesByWorkingGroup
+//@access public
+const getClassesByWorkingGroup = asyncHandler(async (req, res) => {
+  try {
+    const { workingGroupId } = req.body;
+    let classData = await PModel.getClassesByWorkingGroup(workingGroupId);
+    res.status(200).json({ classData: classData });
+  } catch (err) {
+    res.status(500).json({ message: "خطا در دریافت اطلاعات" });
+  }
+});
+
 
 module.exports = {
   registerUser,
@@ -633,5 +764,14 @@ module.exports = {
   setPanelLight,
   setPanelThem,
   loadCistyOstan,
-  loadJcenterForOstan
+  loadJcenterForOstan,
+  getLandingBanners,
+  getSiteStartingClasses,
+  getLandingClassData,
+  getCitiesWithCenter,
+  getCentersByCity,
+  getClassesByCenter,
+  getMainWorkingGroups,
+  getWorkingGroups,
+  getClassesByWorkingGroup
 };
