@@ -1413,40 +1413,56 @@ teachers__info.user_id =?`;
         let query = mysql.format(statement, [classId]);
         return await module.exports.dbQuery_promise(query);
     },
-    
+
     deleteContent: async (contentId) => {
         let statement = `DELETE FROM classes__content WHERE ID = ?`;
         let query = mysql.format(statement, [contentId]);
         return await module.exports.dbQuery_promise(query);
     },
     // دریافت یک محتوای خاص
-    getOfflineClassesContent: async () => {
-       let statement = `
-            SELECT 
-                cc.*,
-                ci.title AS class_title,
-                eg.title AS education_group_title,
-                jci.title AS jcenter_title
+    getClassesWithOfflineContent: async () => {
+        let statement = `
+            SELECT
+            ci.ID, 
+            ci.title AS class_title,
+            eg.title AS education_group_title,
+            jci.title AS jcenter_title
             FROM classes__content cc
             INNER JOIN classes__info ci ON cc.class_id = ci.ID
             INNER JOIN education__group eg ON ci.group_id = eg.ID
             INNER JOIN jcenters__info jci ON ci.jcenters_id = jci.ID
             WHERE cc.status = 'Pending'
-            ORDER BY cc.insert_time DESC
+            GROUP BY ci.ID 
+            ORDER BY cc.insert_time ASC;
         `;
         let query = mysql.format(statement, []);
         let result = await module.exports.dbQuery_promise(query);
         return result;
     },
-
+    getPendingOfflineContent: async (classId) => {
+        let statement = `
+            SELECT 
+                class__contents.*,
+                user__info.first_name,
+                user__info.last_name
+            FROM class__contents
+            INNER JOIN user__info ON class__contents.creator_id = user__info.ID
+            WHERE class__contents.class_id = ?
+            AND class__contents.status = 'pending'
+            AND class__contents.type = 'offline'
+            ORDER BY class__contents.created_at DESC
+        `;
+        let query = mysql.format(statement, [classId]);
+        let result = await module.exports.dbQuery_promise(query);
+        return result;
+    },
     // افزودن محتوای جدید
     addContent: async (contentData) => {
         let statement = `
             INSERT INTO classes__content 
             (class_id, title, content_type, file_url, file_size, file_extension, 
              description, priority, creator_user_id, editor_user_id) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `;
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
         let query = mysql.format(statement, [
             contentData.class_id,
             contentData.title,
@@ -1460,5 +1476,20 @@ teachers__info.user_id =?`;
             contentData.creator_user_id // در زمان ایجاد، creator و editor یکی هستند
         ]);
         return await module.exports.dbQuery_promise(query);
+    },
+    updateContentStatus: async (contentId, status, reviewerId) => {
+        try {
+            const statement = `
+                UPDATE classes__content 
+                SET status = ?, 
+                    last_update_time = NOW(),
+                    reviewer_user_id = ?
+                WHERE ID = ?
+            `;
+            const query = mysql.format(statement, [status, reviewerId, contentId]);
+            return await module.exports.dbQuery_promise(query);
+        } catch (err) {
+            throw err;
+        }
     },
 }

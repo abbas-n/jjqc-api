@@ -1331,17 +1331,18 @@ const getClassContents = asyncHandler(async (req, res) => {
 });
 
 // دریافت یک محتوای خاص
-const getOfflineClassesContent = asyncHandler(async (req, res) => {
+const getClassesWithOfflineContent = asyncHandler(async (req, res) => {
   try {
-    const content = await educationModel.getOfflineClassesContent();
+    const classesRS = await educationModel.getClassesWithOfflineContent();
     
-    if (!content) {
-      return res.status(404).json({ message: "محتوای مورد نظر یافت نشد" });
+    if (!classesRS) {
+      return res.status(404).json({ message: "دوره مورد نظر یافت نشد" });
     }
 
-    res.status(200).json({ content });
+    res.status(200).json({ classesRS });
   } catch (err) {
-    res.status(500).json({ message: "خطا در دریافت محتوا" });
+    // console.log(err);
+    res.status(500).json({ message: "خطا در دریافت دوره" });
   }
 });
 
@@ -1425,6 +1426,52 @@ const createClassContent = asyncHandler(async (req, res) => {
   } catch (err) {
     res.status(500).json({ message: "خطا در افزودن محتوا" });
   }
+});
+
+//@desc Get pending offline content for a class
+//@route POST /api/v1/education/getPendingOfflineContent
+//@access private
+const getPendingOfflineContent = asyncHandler(async (req, res) => {
+    try {
+        const { classId } = req.body;
+        if (!classId) {
+            return res.status(400).json({ message: "کلاس مورد نظر مشخص نشده است" });
+        }
+
+        const pendingContent = await educationModel.getPendingOfflineContent(classId);
+        res.status(200).json({  pendingContent });
+    } catch (err) {
+        console.error('Error in getPendingOfflineContent:', err);
+        res.status(500).json({ message: "خطا در دریافت محتوای در انتظار تایید" });
+    }
+});
+
+//@desc Review class content
+//@route POST /api/v1/education/reviewClassContent
+//@access private
+const reviewClassContent = asyncHandler(async (req, res) => {
+    try {
+        const { content_id, status } = req.body;
+        
+        if (!content_id || !status) {
+            return res.status(400).json({ message: "اطلاعات ناقص است" });
+        }
+
+        if (status !== 'approved' && status !== 'rejected') {
+            return res.status(400).json({ message: "وضعیت نامعتبر است" });
+        }
+
+        const result = await educationModel.updateContentStatus(content_id, status, req.user.ID);
+        
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ message: "محتوا یافت نشد" });
+        }
+
+        res.status(200).json({ message: "وضعیت محتوا با موفقیت بروزرسانی شد" });
+    } catch (err) {
+        console.error('Error in reviewClassContent:', err);
+        res.status(500).json({ message: "خطا در بروزرسانی وضعیت محتوا" });
+    }
 });
 
 module.exports = {
@@ -1519,8 +1566,10 @@ module.exports = {
   submitRequestChange,
   getExamQuestions,
   getClassContents,
-  getOfflineClassesContent,
+  getClassesWithOfflineContent,
   deleteContent,
   uploadContentFile,
   createClassContent,
+  getPendingOfflineContent,
+  reviewClassContent,
 };

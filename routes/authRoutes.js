@@ -36,4 +36,8 @@ router.get("/getMainWorkingGroups", auth.getMainWorkingGroups);
 router.post("/getWorkingGroups", auth.getWorkingGroups);
 router.post("/getClassesByWorkingGroup", auth.getClassesByWorkingGroup);
 
+router.get('/getMainCenters', auth.getMainCenters);
+
+router.post('/getCenterDetails', auth.getCenterDetails);
+
 module.exports = router;

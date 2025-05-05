@@ -176,7 +176,7 @@ const registerUser = asyncHandler(async (req, res) => {
         });
         res.status(200).json({ message: 'کاربر با موفقیت ثبت شد' });
       } else {
-        res.status(400).json({ message: 'خطا در ثبت کاربر' }); 
+        res.status(400).json({ message: 'خطا در ثبت کاربر' });
       }
     }
   } catch (error) {
@@ -747,6 +747,57 @@ const getClassesByWorkingGroup = asyncHandler(async (req, res) => {
   }
 });
 
+//@desc Get main centers with their education groups and sub-centers
+//@route GET /api/v1/auth/getMainCenters
+//@access private
+const getMainCenters = asyncHandler(async (req, res) => {
+  try {
+    const mainCenters = await PModel.getMainCentersWithDetails();
+    res.status(200).json({
+      mainCenters: mainCenters,
+      message: "مراکز اصلی با موفقیت دریافت شدند"
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "خطا در دریافت اطلاعات مراکز اصلی"
+    });
+  }
+});
+
+//@desc Get center details with all related information
+//@route POST /api/v1/auth/getCenterDetails
+//@access public
+const getCenterDetails = asyncHandler(async (req, res) => {
+    try {
+        const { centerId } = req.body;
+        
+        if (!centerId) {
+            res.status(400).json({
+                message: "شناسه مرکز الزامی است"
+            });
+            return;
+        }
+
+        const centerDetails = await PModel.getCenterDetails(centerId);
+        
+        if (!centerDetails) { 
+            res.status(404).json({
+                message: "مرکز مورد نظر یافت نشد"
+            });
+            return;
+        }
+
+        res.status(200).json({
+            centerDetails: centerDetails,
+            message: "اطلاعات مرکز با موفقیت دریافت شد"
+        });
+    } catch (error) {
+        console.error('Error in getCenterDetails:', error);
+        res.status(500).json({
+            message: "خطا در دریافت اطلاعات مرکز"
+        });
+    }
+});
 
 module.exports = {
   registerUser,
@@ -774,5 +825,7 @@ module.exports = {
   getClassesByCenter,
   getMainWorkingGroups,
   getWorkingGroups,
-  getClassesByWorkingGroup
+  getClassesByWorkingGroup,
+  getMainCenters,
+  getCenterDetails
 };

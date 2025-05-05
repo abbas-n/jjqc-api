@@ -1439,8 +1439,11 @@ WHERE classes__user_relation.user_id = ?`;
             jcenters__info.phone,
             jcenters__info.address,
             jcenters__info.web_site,
-            jcenters__info.logo
+            jcenters__info.logo,
+            jcenters__info.parent_id,
+            parent.title AS parent_title
             FROM jcenters__info
+            LEFT JOIN jcenters__info AS parent ON jcenters__info.parent_id = parent.ID
             WHERE jcenters__info.status='Active' AND  jcenters__info.city_id=? `;
         query = mysql.format(statement, [cityId]);
         queryRS = await module.exports.dbQuery_promise(query);
@@ -1495,5 +1498,183 @@ WHERE classes__user_relation.user_id = ?`;
         query = mysql.format(statement, [workingGroupId]);
         queryRS = await module.exports.dbQuery_promise(query);
         return queryRS;
+    },
+    getMainCentersWithDetails: async () => {
+        let statement, query, queryRS;
+        statement = `
+            SELECT 
+                jci.ID,
+                jci.title,
+                jci.center_mood,
+                jci.status,
+                jci.city_id,
+                co.name as city_name,
+                (
+                    SELECT JSON_ARRAYAGG(
+                        JSON_OBJECT(
+                            'id', eg.ID,
+                            'title', eg.title,
+                            'image_url', eg.image_url
+                        )
+                    )
+                    FROM jcenters__eduGroup_relation jgr
+                    INNER JOIN education__group eg ON eg.ID = jgr.education_group_id
+                    WHERE jgr.jcenter_id = jci.ID
+                ) as education_groups,
+                (
+                    SELECT JSON_ARRAYAGG(
+                        JSON_OBJECT(
+                            'id', sub.ID,
+                            'title', sub.title,
+                            'status', sub.status,
+                            'image_url', sub.logo
+                        )
+                    )
+                    FROM jcenters__info sub
+                    WHERE sub.parent_id = jci.ID AND sub.center_mood = 'center'
+                ) as sub_centers
+            FROM jcenters__info jci
+            LEFT JOIN city__ostan co ON co.ID = jci.city_id
+            WHERE jci.center_mood = 'main_center'
+            AND jci.status = 'Active'
+        `;
+        query = mysql.format(statement);
+        queryRS = await module.exports.dbQuery_promise(query);
+        
+        // Process the results to handle NULL values in JSON arrays
+        queryRS = queryRS.map(center => ({
+            ...center,
+            education_groups: center.education_groups ? JSON.parse(center.education_groups) : [],
+            sub_centers: center.sub_centers ? JSON.parse(center.sub_centers) : []
+        }));
+        
+        return queryRS;
+    },
+    getCenterDetails: async (centerId) => {
+        let statement, query, queryRS;
+        
+        // Get basic center info
+        statement = `
+            SELECT 
+                jci.ID,
+                jci.title,
+                jci.description,
+                jci.center_mood,
+                jci.status,
+                jci.city_id,
+                jci.logo,
+                jci.phone,
+                jci.email,
+                jci.web_site,
+                jci.address,
+                co.name as city_name,
+                (
+                    SELECT JSON_ARRAYAGG(
+                        JSON_OBJECT(
+                            'id', eg.ID,
+                            'title', eg.title,
+                            'image_url', eg.image_url
+                        )
+                    )
+                    FROM jcenters__eduGroup_relation jgr
+                    INNER JOIN education__group eg ON eg.ID = jgr.education_group_id
+                    WHERE jgr.jcenter_id = jci.ID
+                ) as education_groups,
+                (
+                    SELECT JSON_ARRAYAGG(
+                        JSON_OBJECT(
+                            'id', sub.ID,
+                            'title', sub.title,
+                            'status', sub.status,
+                            'logo', sub.logo,
+                            'education_groups', (
+                                SELECT JSON_ARRAYAGG(
+                                    JSON_OBJECT(
+                                        'id', sub_eg.ID,
+                                        'title', sub_eg.title,
+                                        'image_url', sub_eg.image_url
+                                    )
+                                )
+                                FROM jcenters__eduGroup_relation sub_jgr
+                                INNER JOIN education__group sub_eg ON sub_eg.ID = sub_jgr.education_group_id
+                                WHERE sub_jgr.jcenter_id = sub.ID
+                            )
+                        )
+                    )
+                    FROM jcenters__info sub
+                    WHERE sub.parent_id = jci.ID AND sub.center_mood = 'center'
+                ) as sub_centers,
+                (
+                    SELECT JSON_ARRAYAGG(
+                        JSON_OBJECT(
+                            'id', dep.ID,
+                            'title', dep.title,
+                            'education_groups', (
+                                SELECT JSON_ARRAYAGG(
+                                    JSON_OBJECT(
+                                        'id', eg.ID,
+                                        'title', eg.title,
+                                        'image_url', eg.image_url
+                                    )
+                                )
+                                FROM jcenters__eduGroup_relation jgr
+                                INNER JOIN education__group eg ON eg.ID = jgr.education_group_id
+                                WHERE jgr.jcenter_id = jci.ID AND jgr.department_id = dep.ID
+                            )
+                        )
+                    )
+                    FROM jcenters__department_relation jdr
+                    INNER JOIN education__department dep ON dep.ID = jdr.department_id
+                    WHERE jdr.jcenter_id = jci.ID
+                ) as departments,
+                (
+                    SELECT JSON_ARRAYAGG(
+                        JSON_OBJECT(
+                            'id', ci.ID,
+                            'title', ci.title,
+                            'image_url', ci.image_url,
+                            'delivery_text', ci.delivery_text,
+                            'price', ci.price,
+                            'start_date', ci.start_date,
+                            'end_register_date', ci.end_register_date,
+                            'type_title', ct.title,
+                            'teacher_name', CONCAT(ti.f_name, ' ', ti.l_name)
+                        )
+                    )
+                    FROM classes__info ci
+                    INNER JOIN classes__type ct ON ct.ID = ci.type_id
+                    LEFT JOIN teachers__info ti ON ti.ID = ci.teacher_id
+                    WHERE ci.jcenters_id = jci.ID 
+                    AND ci.status = 'Active'
+                    AND ci.end_register_date > CURDATE()
+                    AND ci.start_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 20 DAY)
+                ) as upcoming_classes
+            FROM jcenters__info jci
+            LEFT JOIN city__ostan co ON co.ID = jci.city_id
+            WHERE jci.ID = ? AND jci.status = 'Active'
+        `;
+        
+        query = mysql.format(statement, [centerId]);
+        queryRS = await module.exports.dbQuery_promise(query);
+        
+        if (queryRS.length > 0) {
+            // Process the results to handle NULL values in JSON arrays
+            const center = queryRS[0];
+            return {
+                ...center,
+                education_groups: center.education_groups ? (typeof center.education_groups === 'string' ? JSON.parse(center.education_groups) : center.education_groups) : [],
+                sub_centers: center.sub_centers ? (typeof center.sub_centers === 'string' ? JSON.parse(center.sub_centers).map(sub => ({
+                    ...sub,
+                    education_groups: sub.education_groups ? (typeof sub.education_groups === 'string' ? JSON.parse(sub.education_groups) : sub.education_groups) : []
+                })) : center.sub_centers) : [],
+                departments: center.departments ? (typeof center.departments === 'string' ? JSON.parse(center.departments).map(dep => ({
+                    ...dep,
+                    education_groups: dep.education_groups ? (typeof dep.education_groups === 'string' ? JSON.parse(dep.education_groups) : dep.education_groups) : []
+                })) : center.departments) : [],
+                upcoming_classes: center.upcoming_classes ? (typeof center.upcoming_classes === 'string' ? JSON.parse(center.upcoming_classes) : center.upcoming_classes) : []
+            };
+        }
+        
+        return null;
     }
 }

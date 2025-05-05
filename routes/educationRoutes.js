@@ -122,6 +122,10 @@ router.post('/uploadContentFile', educationCtrl.uploadContentFile);
 router.post('/createClassContent', educationCtrl.createClassContent);
 router.post('/deleteClassContent', educationCtrl.deleteContent);
 router.post('/getClassContents', educationCtrl.getClassContents);
-router.get('/getOfflineClassesContent', educationCtrl.getOfflineClassesContent);
+router.get('/getClassesWithOfflineContent', educationCtrl.getClassesWithOfflineContent);
+
+router.post("/getPendingOfflineContent", educationCtrl.getPendingOfflineContent);
+
+router.post("/reviewClassContent", educationCtrl.reviewClassContent);
 
 module.exports = router; 
