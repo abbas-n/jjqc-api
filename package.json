@@ -26,6 +26,7 @@
     "moment-jalaali": "^0.10.4",
     "moment-timezone": "^0.5.46",
     "mysql": "^2.18.1",
+    "node-cron": "^3.0.3",
     "openai": "^4.77.0",
     "request": "^2.88.2",
     "uuid": "^10.0.0",

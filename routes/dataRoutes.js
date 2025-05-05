@@ -35,6 +35,7 @@ router.post("/updateBuildingRoomRelStatus", dataCtrl.updateBuildingRoomRelStatus
 router.post("/getAllJbuildingsRoomsData", dataCtrl.getAllJbuildingsRoomsData);
 router.post("/getJbuildingsRoomsData", dataCtrl.getJbuildingsRoomsData);
 router.post("/getClassHoldTimeData", dataCtrl.getClassHoldTimeData);
+router.post("/getClassDeliveryData", dataCtrl.getClassDeliveryData);
 router.post("/submitHoldTime", dataCtrl.submitHoldTime);
 
 router.post("/updateHoldTimeStatus", dataCtrl.updateHoldTimeStatus);

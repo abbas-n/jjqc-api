@@ -195,7 +195,8 @@ module.exports = {
         // });
         // return rs;
 
-        let needUrl = `${process.env.candoosmsURL}username=${process.env.candoosmsUser}&password=${process.env.candoosmsPass}&command=send&src=200002184650&destinations=${mobiles}&body=${msg}&flash=0`;
+        let needUrl = `${process.env.candoosmsURL}username=${process.env.candoosmsUser}&password=${process.env.candoosmsPass}&command=send&src=982184650&destinations=${mobiles}&body=${msg}&flash=0`;
+        console.log(needUrl)
         try {
             const response = await axios.get(needUrl);
             const match = response.data.match(/ID:(\d+)/);

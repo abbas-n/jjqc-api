@@ -860,7 +860,6 @@ WHERE lesson__eduGroup_relation.education_group_id = ?`;
         LEFT JOIN certificate__structure ON classes__info.certificate_structure_id = certificate__structure.ID
         INNER JOIN lesson__info ON classes__info.lesson_id = lesson__info.ID` +
             (jcenterId > 0 ? ` WHERE classes__info.jcenters_id=?` : ` WHERE classes__info.creator_user_id=?`) + ` GROUP BY classes__info.ID`;
-
         let query = mysql.format(statement, [jcenterId]);
         queryRS = await module.exports.dbQuery_promise(query);
         return queryRS;
@@ -937,8 +936,8 @@ WHERE lesson__eduGroup_relation.education_group_id = ?`;
             let classCode = `${now}${randomFourDigits}`;
             classCode = queryBody.code;
 
-            statement = `INSERT INTO classes__info(jcenters_id , code,department_id, group_id, lesson_id, type_id, delivery_id, title, description, headlines, expense, cancellation_penalty, capacity, approved_time, class_sessions_number, absent_allow, gender, image_url, image_alt_text, start_date, end_date, end_register_date, end_date_time, end_cancel_date, end_cancel_time,status,certificate_id,certificate_structure_id,department_signature_need,absence_conditions,debt_free_condition,average_condition,obtaining_condition,end_class_condition,delivery_possibility,delivery_price,physical_certificate_fee,creator_user_id,event_type) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`;
-            query = mysql.format(statement, [queryBody.jcenters_id, classCode, queryBody.department_id, queryBody.group_id, queryBody.lesson_id, queryBody.type_id, queryBody.delivery_id, queryBody.title, queryBody.description, queryBody.headlines, queryBody.expense, queryBody.cancellation_penalty, queryBody.capacity, queryBody.approved_time, queryBody.class_sessions_number, queryBody.absent_allow, queryBody.gender, queryBody.image_url, queryBody.image_alt_text, queryBody.start_date, queryBody.end_date, queryBody.end_register_date, queryBody.end_date_time, queryBody.end_cancel_date, queryBody.end_cancel_time, queryBody.status, queryBody.certificate_id, queryBody.certificate_structure_id, queryBody.department_signature_need, queryBody.absence_conditions, queryBody.debt_free_condition, queryBody.average_condition, queryBody.obtaining_condition, queryBody.end_class_condition, queryBody.delivery_possibility, queryBody.delivery_price, queryBody.physical_certificate_fee, userID, queryBody.event_type]);
+            statement = `INSERT INTO classes__info(jcenters_id , code,department_id, group_id, lesson_id, type_id, delivery_id, title, description, headlines, expense, cancellation_penalty, capacity, approved_time, class_sessions_number, absent_allow, gender, image_url, image_alt_text, start_date, end_date, end_register_date, end_date_time, end_cancel_date, end_cancel_time,status,certificate_id,certificate_structure_id,department_signature_need,absence_conditions,debt_free_condition,average_condition,obtaining_condition,end_class_condition,delivery_possibility,delivery_price,physical_certificate_fee,creator_user_id,event_type) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`;
+            query = mysql.format(statement, [queryBody.jcenters_id, classCode, queryBody.department_id, queryBody.group_id, queryBody.lesson_id, queryBody.type_id, queryBody.delivery_id, queryBody.title, queryBody.description, queryBody.headlines, queryBody.expense, queryBody.cancellation_penalty, queryBody.capacity, queryBody.approved_time, queryBody.class_sessions_number, queryBody.absent_allow, queryBody.gender, queryBody.image_url, queryBody.image_alt_text, queryBody.start_date, queryBody.end_date, queryBody.end_register_date, queryBody.end_date_time, queryBody.end_cancel_date, queryBody.end_cancel_time, 'Panel_Show_Only', queryBody.certificate_id, queryBody.certificate_structure_id, queryBody.department_signature_need, queryBody.absence_conditions, queryBody.debt_free_condition, queryBody.average_condition, queryBody.obtaining_condition, queryBody.end_class_condition, queryBody.delivery_possibility, queryBody.delivery_price, queryBody.physical_certificate_fee, userID, queryBody.event_type]);
             queryRS = await module.exports.dbQuery_promise(query);
         }
 
@@ -1146,7 +1145,7 @@ teachers__info.user_id =?`;
         statement = `
             SELECT 
             classes__info.*,
-            classes__delivery_type.title AS delivery_title,
+             GROUP_CONCAT(classes__delivery_type.title) AS delivery_title,
             GROUP_CONCAT(classes__delivery_relation.delivery_id) AS deliveryIds,
             classes__type.title AS type_title,
             education__department.title AS department_title,
@@ -1161,8 +1160,8 @@ teachers__info.user_id =?`;
             FROM classes__info
             INNER JOIN classes__user_relation ON classes__user_relation.class_id = classes__info.ID
             INNER JOIN classes__type ON classes__info.type_id = classes__type.ID
-            INNER JOIN classes__delivery_type ON classes__info.delivery_id = classes__delivery_type.ID
             INNER JOIN classes__delivery_relation ON classes__info.ID = classes__delivery_relation.classe_id
+            INNER JOIN classes__delivery_type ON classes__delivery_relation.delivery_id = classes__delivery_type.ID
             INNER JOIN education__department ON classes__info.department_id = education__department.ID
             INNER JOIN education__group ON classes__info.group_id = education__group.ID
             INNER JOIN jcenters__info ON classes__info.jcenters_id = jcenters__info.ID
@@ -1303,9 +1302,10 @@ teachers__info.user_id =?`;
 
     checkCartClassToManageRegister: async (userId) => {
         let statement, query, queryRS;
-        statement = `SELECT classes__info.*
+        statement = `SELECT classes__info.*,classes__delivery_relation.delivery_id
                     FROM user__cart
                     INNER JOIN classes__info ON classes__info.ID = user__cart.class_id
+                    INNER JOIN classes__delivery_relation ON classes__delivery_relation.classe_id = classes__info.ID
                     WHERE user__cart.user_id = ?`;
         query = mysql.format(statement, [userId]);
         queryRS = await module.exports.dbQuery_promise(query);
@@ -1397,5 +1397,68 @@ teachers__info.user_id =?`;
         query = mysql.format(statement, [0]);
         queryRS = await module.exports.dbQuery_promise(query);
         return queryRS;
+    },
+    // دریافت تمام محتواهای یک کلاس
+    getClassContents: async (classId) => {
+        let statement = `
+        SELECT classes__content.*, 
+        CONCAT(creator.fname, ' ', creator.lname) as creator_name,
+        CONCAT(reviewer.fname, ' ', reviewer.lname) as reviewer_name
+        FROM classes__content 
+        LEFT JOIN user__info as creator ON creator.ID = classes__content.creator_user_id
+        LEFT JOIN user__info as reviewer ON reviewer.ID = classes__content.reviewer_user_id
+        WHERE class_id = ?
+        ORDER BY priority ASC, insert_time DESC
+        `;
+        let query = mysql.format(statement, [classId]);
+        return await module.exports.dbQuery_promise(query);
+    },
+    
+    deleteContent: async (contentId) => {
+        let statement = `DELETE FROM classes__content WHERE ID = ?`;
+        let query = mysql.format(statement, [contentId]);
+        return await module.exports.dbQuery_promise(query);
+    },
+    // دریافت یک محتوای خاص
+    getOfflineClassesContent: async () => {
+       let statement = `
+            SELECT 
+                cc.*,
+                ci.title AS class_title,
+                eg.title AS education_group_title,
+                jci.title AS jcenter_title
+            FROM classes__content cc
+            INNER JOIN classes__info ci ON cc.class_id = ci.ID
+            INNER JOIN education__group eg ON ci.group_id = eg.ID
+            INNER JOIN jcenters__info jci ON ci.jcenters_id = jci.ID
+            WHERE cc.status = 'Pending'
+            ORDER BY cc.insert_time DESC
+        `;
+        let query = mysql.format(statement, []);
+        let result = await module.exports.dbQuery_promise(query);
+        return result;
+    },
+
+    // افزودن محتوای جدید
+    addContent: async (contentData) => {
+        let statement = `
+            INSERT INTO classes__content 
+            (class_id, title, content_type, file_url, file_size, file_extension, 
+             description, priority, creator_user_id, editor_user_id) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `;
+        let query = mysql.format(statement, [
+            contentData.class_id,
+            contentData.title,
+            contentData.content_type,
+            contentData.file_url,
+            contentData.file_size,
+            contentData.file_extension,
+            contentData.description,
+            contentData.priority || 0,
+            contentData.creator_user_id,
+            contentData.creator_user_id // در زمان ایجاد، creator و editor یکی هستند
+        ]);
+        return await module.exports.dbQuery_promise(query);
     },
 }

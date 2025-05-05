@@ -61,10 +61,11 @@ const sendVerifyCode = asyncHandler(async (req, res) => {
         } else {
           const msg = "سامانه جهاد دانشگاهی " + "\n" + "کد تایید:" + code;
           var smsRS = await tools.sendSMS_ir(msg, mobile);
+          console.log(smsRS)
           if (smsRS == 1) {
             res.status(200).json({ message: 'کد با موفقیت ارسال شد' });
           } else {
-            res.status(500).json({ message: 'خطا در ارسال پیامک' });
+            res.status(500).json({ message: '1خطا در ارسال پیامک' });
           }
         }
       } catch (err) {
@@ -175,11 +176,11 @@ const registerUser = asyncHandler(async (req, res) => {
         });
         res.status(200).json({ message: 'کاربر با موفقیت ثبت شد' });
       } else {
-        res.status(400).json({ message: 'خطا در ثبت کاربر' });
+        res.status(400).json({ message: 'خطا در ثبت کاربر' }); 
       }
     }
   } catch (error) {
-
+    console.log(error)
   }
 });
 
@@ -216,7 +217,7 @@ const loginUser = asyncHandler(async (req, res) => {
       if (await bcrypt.compare(password, hashedPassword)) {
         const userDataForToken = {
           user: {
-            username: user[0].fname + ' ' + user[0].lname,
+            username: user[0].fname + ' ' + (user[0].lname ? user[0].lname : ''),
             ID: user[0].ID,
             lightMode: user[0].active_mode,
             activeTheme: user[0].active_theme,

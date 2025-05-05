@@ -117,5 +117,11 @@ router.get("/loadAllDepartment", educationCtrl.loadAllDepartment);
 router.get("/sendMoodleReq", educationCtrl.sendMoodleReq);
 router.get("/sendAdobeReq", educationCtrl.sendAdobeReq);
 
+//-------------------------Content------------------------------------
+router.post('/uploadContentFile', educationCtrl.uploadContentFile);
+router.post('/createClassContent', educationCtrl.createClassContent);
+router.post('/deleteClassContent', educationCtrl.deleteContent);
+router.post('/getClassContents', educationCtrl.getClassContents);
+router.get('/getOfflineClassesContent', educationCtrl.getOfflineClassesContent);
 
 module.exports = router; 

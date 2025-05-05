@@ -240,7 +240,7 @@ class AdobeApiModel {
 
 
   async createUser(firstName, lastName, mobile, email) {
-    const url = `${this.apiUrl}action=principal-update&first-name=${firstName}&last-name=${lastName}&login=${mobile}&email=${email}&password=${mobile}&type=user&send-email=true&has-children=0`;
+    const url = `${this.apiUrl}action=principal-update&first-name=${firstName}&last-name=${lastName?lastName:'_'}&login=${mobile}&email=${email}&password=${mobile}&type=user&send-email=true&has-children=0`;
 
     const response = await this.fileGetContent(url);
     const parsedResponse = await this.parseXML(response);

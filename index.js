@@ -4,6 +4,9 @@ const dotenv = require("dotenv").config();
 const cookieParser = require('cookie-parser');
 const cors = require('cors');
 
+// Import and initialize the scheduler
+// require('./scheduled-tasks/scheduler');
+
 const app = express();
 const port = process.env.PORT;
 app.use(express.json({limit: '10mb'}));

@@ -600,6 +600,7 @@ const handleEnterOnlineClass = asyncHandler(async (req, res) => {
     if (userPermission != 5) {//user is center or teacher
       if (classData[0]['adobe_dir_sco_id'] === null) {
         let folderScoId = await adobeOBJ.getScos('content');
+        console.log('folderScoId : ' + folderScoId);
         let adobe_dir_sco_id = await adobeOBJ.createFolder(classData[0]['title'], folderScoId);
         statement = `UPDATE classes__info SET adobe_dir_sco_id=? WHERE ID=?`;
         query = mysql.format(statement, [adobe_dir_sco_id, classId]);
@@ -630,6 +631,7 @@ const handleEnterOnlineClass = asyncHandler(async (req, res) => {
     res.status(200).json({ meetingURL: meetingURL });
 
   } catch (err) {
+    console.log(err);
     res.status(500).json({ message: "خطا در دریافت اطلاعات" });
   }
 });
@@ -901,16 +903,16 @@ const addClassInfoToDb = asyncHandler(async (req, res) => {
     const { ClassesData, copyMode, deliveryResult } = req.body;
     let classRS = await educationModel.addClassInfoToDb(ClassesData, userID, deliveryResult);
     let lessonHasRelData = await educationModel.getLessonEduGroupRelShortData(ClassesData.lesson_id, ClassesData.group_id);
-    if (lessonHasRelData.length > 0 && ClassesData.delivery_id == 3) {
+    if (lessonHasRelData.length > 0 && deliveryResult.some(item => item.delivery_id === 3)) {
       if (ClassesData.ID && copyMode !== true) {
         await moodleOBJ.updateCourse(ClassesData.ID, ClassesData.title, ClassesData.description, ClassesData.status, lessonHasRelData[0]['moodle_subcategory_id'], ClassesData.moodle_course_id);
         // await moodleOBJ.duplicateCourse(relRS, lessonHasRelData[0]['moodle_course_id'], lessonData[0]['title'], eduGroupData[0]['title'], eduGroupData[0]['moodle_category_id']);
       } else {
-
         await moodleOBJ.createCourse(classRS.insertId, ClassesData.title, ClassesData.description, lessonHasRelData[0]['moodle_subcategory_id']);
+
       }
     }
-    res.status(200).json({ message: "اطلاعات با موفقیت ثبت شد", classRS: classRS });
+    res.status(200).json({ message: "اطلاعات با موفقیت ثبت شد", classRS: classRS }); 
   } catch (err) {
     console.log(err);
     res.status(500).json({ message: "خطا در ثبت اطلاعات" });
@@ -1317,6 +1319,113 @@ const sendAdobeReq = asyncHandler(async (req, res) => {
   }
 });
 
+// دریافت تمام محتواهای یک کلاس
+const getClassContents = asyncHandler(async (req, res) => {
+  try {
+    const classId = req.body.classId;
+    const contents = await educationModel.getClassContents(classId);
+    res.status(200).json({ contents });
+  } catch (err) {
+    res.status(500).json({ message: "خطا در دریافت محتواهای کلاس" });
+  }
+});
+
+// دریافت یک محتوای خاص
+const getOfflineClassesContent = asyncHandler(async (req, res) => {
+  try {
+    const content = await educationModel.getOfflineClassesContent();
+    
+    if (!content) {
+      return res.status(404).json({ message: "محتوای مورد نظر یافت نشد" });
+    }
+
+    res.status(200).json({ content });
+  } catch (err) {
+    res.status(500).json({ message: "خطا در دریافت محتوا" });
+  }
+});
+
+
+// حذف محتوا
+const deleteContent = asyncHandler(async (req, res) => {
+  try {
+    const contentId = req.body.contentId;
+    await educationModel.deleteContent(contentId);
+    
+    res.status(200).json({ message: "محتوا با موفقیت حذف شد" });
+  } catch (err) {
+    res.status(500).json({ message: "خطا در حذف محتوا" });
+  }
+});
+
+// آپلود فایل محتوا
+const uploadContentFile = asyncHandler(async (req, res) => {
+  try {
+    const userID = req.user.ID;
+    let documentInBase64 = req.body.file;
+    
+    // استخراج نوع فایل از رشته base64
+    const mimeType = documentInBase64.split(';')[0];
+    const fileType = mimeType.split('/')[0]; // video, image, audio, etc.
+    const fileExtension = mimeType.split('/')[1]; // mp4, png, jpg, etc.
+    
+    // محاسبه حجم فایل
+    let stringLength = documentInBase64.length - (mimeType + ';base64,').length;
+    let sizeInBytes = 4 * Math.ceil((stringLength / 3)) * 0.5624896334383812;
+    let docSize = sizeInBytes / 1000; // تبدیل به کیلوبایت
+    
+    // ایجاد نام فایل منحصر به فرد
+    let fileTarget = 'Class_Content/' + userID + '_' + makeid(10) + '.' + fileExtension;
+    const pathToSaveFile = '/home/jjqc_ir/jjqc-panel/public/' + fileTarget;
+    
+    // ذخیره فایل بر اساس نوع
+    if (fileType === 'image') {
+      // برای تصاویر از کتابخانه تخصصی استفاده می‌کنیم
+      base64Obj.converBase64ToImage(documentInBase64, pathToSaveFile);
+    } else {
+      // برای سایر فایل‌ها از روش عمومی استفاده می‌کنیم
+      const base64Data = documentInBase64.replace(/^data:\w+\/\w+;base64,/, '');
+      const buffer = Buffer.from(base64Data, 'base64');
+      require('fs').writeFileSync(pathToSaveFile, buffer);
+    }
+    
+    res.status(200).json({ 
+      file_url: fileTarget,
+      file_size: docSize,
+      file_extension: fileExtension,
+      file_type: fileType
+    });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: 'خطا در آپلود فایل' });
+  }
+});
+
+// ایجاد محتوای جدید
+const createClassContent = asyncHandler(async (req, res) => {
+  try {
+    const contentData = {
+      class_id: req.body.class_id,
+      title: req.body.title,
+      content_type: req.body.content_type,
+      file_url: req.body.file_url,
+      file_size: req.body.file_size,
+      file_extension: req.body.file_extension,
+      description: req.body.description,
+      priority: req.body.priority,
+      creator_user_id: req.user.ID
+    };
+
+    const result = await educationModel.addContent(contentData);
+    
+    res.status(200).json({ 
+      message: "محتوا با موفقیت اضافه شد",
+      contentId: result.insertId 
+    });
+  } catch (err) {
+    res.status(500).json({ message: "خطا در افزودن محتوا" });
+  }
+});
 
 module.exports = {
   getAllEducationGroup,
@@ -1408,5 +1517,10 @@ module.exports = {
   loadReserveDetails,
   loadExamApplicantForExamCenter,
   submitRequestChange,
-  getExamQuestions
+  getExamQuestions,
+  getClassContents,
+  getOfflineClassesContent,
+  deleteContent,
+  uploadContentFile,
+  createClassContent,
 };

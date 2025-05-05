@@ -375,18 +375,27 @@ WHERE jcenters__info.ID = ?`;
         queryRS = await module.exports.dbQuery_promise(query);
         return queryRS;
     },
+    getClassDeliveryData: async () => {
+        let statement, query, queryRS;
+        statement = `SELECT ID,title FROM classes__delivery_type`;
+        query = mysql.format(statement, []);
+        queryRS = await module.exports.dbQuery_promise(query);
+        return queryRS;
+    },
     getClassHoldTimeData: async (classId, mood) => {
         let statement, query, queryRS;
         statement = `SELECT
     classes__hold_time.*,
     jcenters__buildings.title AS Building,
     jcenters__building_rooms.title AS Room,
+    classes__delivery_type.title AS deliveryTitle,
     classes__info.title AS ClassName
 FROM
     classes__hold_time
 INNER JOIN jcenters__buildings ON classes__hold_time.buildings_id = jcenters__buildings.ID
 INNER JOIN jcenters__building_rooms ON classes__hold_time.room_id = jcenters__building_rooms.ID
 INNER JOIN classes__info ON classes__hold_time.classes_id = classes__info.ID
+LEFT JOIN classes__delivery_type ON classes__delivery_type.ID = classes__hold_time.delivery_id
 WHERE
     classes__hold_time.classes_id = ?`+ (mood === 'All' ? `` : ` AND classes__hold_time.status='Active'`);
         query = mysql.format(statement, [classId]);
@@ -441,9 +450,11 @@ jcenters__buildings.title AS Building,
     jcenters__building_rooms.title AS Room,
 classes__hold_time.day_id,
 classes__hold_time.start_time,
-classes__hold_time.end_time
+classes__hold_time.end_time,
+classes__delivery_type.title AS deliveryTitle
 FROM classes__session 
 INNER JOIN classes__hold_time ON classes__session.hold_time_id = classes__hold_time.ID
+LEFT JOIN classes__delivery_type ON classes__delivery_type.ID = classes__hold_time.delivery_id
 INNER JOIN classes__info ON classes__session.classe_id = classes__info.ID
 INNER JOIN jcenters__buildings ON classes__hold_time.buildings_id = jcenters__buildings.ID
 INNER JOIN jcenters__building_rooms ON classes__hold_time.room_id = jcenters__building_rooms.ID
@@ -455,10 +466,10 @@ WHERE classes__session.classe_id = ?`;
 
     submitHoldTime: async (classId, holdTimeData) => {
         let statement, query, queryRS;
-        statement = `INSERT INTO classes__hold_time(classes_id, buildings_id, room_id, day_id, start_time, end_time) VALUES (?,?,?,?,?,?)`;
+        statement = `INSERT INTO classes__hold_time(classes_id, buildings_id, room_id,delivery_id, day_id, start_time, end_time) VALUES (?,?,?,?,?,?,?)`;
         holdTimeData.start_time = module.exports.formatDateTime(holdTimeData.start_time, 'Time');
         holdTimeData.end_time = module.exports.formatDateTime(holdTimeData.end_time, 'Time');
-        query = mysql.format(statement, [classId, holdTimeData.building_id, holdTimeData.room_id, holdTimeData.day_id, holdTimeData.start_time, holdTimeData.end_time]);
+        query = mysql.format(statement, [classId, holdTimeData.building_id, holdTimeData.room_id, holdTimeData.delivery_id, holdTimeData.day_id, holdTimeData.start_time, holdTimeData.end_time]);
         queryRS = await module.exports.dbQuery_promise(query);
         if (queryRS.insertId > 0) {
             return queryRS.insertId;
@@ -1452,14 +1463,14 @@ WHERE classes__user_relation.user_id = ?`;
         queryRS = await module.exports.dbQuery_promise(query);
         return queryRS;
     },
-    getMainWorkingGroups: async () => { 
+    getMainWorkingGroups: async () => {
         let statement, query, queryRS;
         statement = `SELECT * FROM education__main_group WHERE status='Active' ORDER BY ID DESC`;
         query = mysql.format(statement, []);
         queryRS = await module.exports.dbQuery_promise(query);
         return queryRS;
     },
-    getWorkingGroups: async (mainGroupId) => { 
+    getWorkingGroups: async (mainGroupId) => {
         let statement, query, queryRS;
         statement = `SELECT ID,title,image_url
             FROM education__group
@@ -1468,7 +1479,7 @@ WHERE classes__user_relation.user_id = ?`;
         queryRS = await module.exports.dbQuery_promise(query);
         return queryRS;
     },
-    getClassesByWorkingGroup: async (workingGroupId) => { 
+    getClassesByWorkingGroup: async (workingGroupId) => {
         let statement, query, queryRS;
         statement = `SELECT 
         classes__info.*,

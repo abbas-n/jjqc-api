@@ -332,6 +332,19 @@ const getClassHoldTimeData = asyncHandler(async (req, res) => {
   }
 });
 
+//@desc get types of class delivery
+//@route get /api/v1/data/getClassDeliveryData
+//@access private
+const getClassDeliveryData = asyncHandler(async (req, res) => {
+  try {
+    let classDeliveryData = await PModel.getClassDeliveryData();
+    res.status(200).json({ classDeliveryTypes: classDeliveryData });
+  } catch (err) {
+    // console.log(err);
+    res.status(500).json({ message: "خطا در دریافت اطلاعات" });
+  }
+});
+
 
 //@desc get jahad center buildings
 //@route get /api/v1/data/getAllJbuildingsData
@@ -1003,6 +1016,7 @@ module.exports = {
   loadDashboardData,
   getAllJbuildingsRoomsData,
   getClassHoldTimeData,
+  getClassDeliveryData,
   getJbuildingsRoomsData,
   submitHoldTime,
   updateHoldTimeStatus,
